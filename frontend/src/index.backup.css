@@ -1,0 +1,55 @@
+* {
+  box-sizing: border-box; /* 🔥 fixes overflow issue */
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(to right, #667eea, #764ba2);
+  margin: 0;
+  padding: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* 🔥 vertical center */
+}
+
+.container {
+  width: 100%;
+  max-width: 350px;
+  padding: 30px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0px 10px 25px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+input {
+  width: 100%; /* 🔥 instead of 90% */
+  padding: 12px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+button {
+  width: 100%; /* 🔥 instead of 95% */
+  padding: 12px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: #5a67d8;
+}

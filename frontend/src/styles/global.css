@@ -1,0 +1,132 @@
+@import "./auth.css";
+@import "./dashboard.css";
+
+:root {
+  --bg: #f6f3ee;
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-strong: #ffffff;
+  --ink: #171717;
+  --muted: #6b6b6b;
+  --line: rgba(23, 23, 23, 0.08);
+  --primary: #0f766e;
+  --primary-deep: #115e59;
+  --accent: #f97316;
+  --accent-soft: rgba(249, 115, 22, 0.12);
+  --shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(249, 115, 22, 0.12), transparent 24%),
+    linear-gradient(135deg, #fffdf8 0%, #f7f1e8 55%, #f3efe8 100%);
+}
+
+body,
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.eyebrow,
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  background: rgba(255, 255, 255, 0.14);
+  color: inherit;
+}
+
+.section-kicker {
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--primary);
+}
+
+.panel,
+.dashboard-hero,
+.brand-panel,
+.auth-card {
+  border: 1px solid var(--line);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+}
+
+.primary-button,
+.ghost-button,
+.tab-button,
+.table-link {
+  border: none;
+  transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+}
+
+.primary-button,
+.ghost-button {
+  border-radius: 16px;
+  padding: 14px 20px;
+  font-weight: 700;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, var(--primary), #14b8a6);
+  color: #f8fffe;
+}
+
+.ghost-button {
+  background: var(--accent-soft);
+  color: #b45309;
+}
+
+.primary-button:hover,
+.ghost-button:hover,
+.tab-button:hover,
+.table-link:hover {
+  transform: translateY(-1px);
+}
+
+.primary-button:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+.Toastify__toast {
+  border-radius: 16px;
+}
+
+.empty-state {
+  color: var(--muted);
+}
