@@ -1,7 +1,16 @@
 import React from "react";
 import ProductCatalog from "./ProductCatalog";
 
-function CustomerDashboard({ isLoadingProducts, products }) {
+function CustomerDashboard({
+  allProductsCount,
+  availableCategories,
+  customerFilters,
+  hasActiveCustomerFilters,
+  isLoadingProducts,
+  onCustomerFilterChange,
+  onResetCustomerFilters,
+  products,
+}) {
   return (
     <section className="dashboard-grid customer-grid">
       <article className="panel spotlight-panel">
@@ -14,12 +23,70 @@ function CustomerDashboard({ isLoadingProducts, products }) {
       </article>
 
       <article className="panel metric-panel">
-        <span>Available Products</span>
+        <span>Matching Products</span>
         <strong>{products.length}</strong>
-        <p>Fresh items visible in your customer catalog.</p>
+        <p>{allProductsCount} products are currently in your catalog.</p>
       </article>
 
-      <ProductCatalog isLoadingProducts={isLoadingProducts} products={products} />
+      <article className="panel customer-filter-panel">
+        <div className="section-title">
+          <div>
+            <span className="section-kicker">Find products faster</span>
+            <h3>Search and filter</h3>
+          </div>
+        </div>
+
+        <div className="customer-filters">
+          <label className="filter-field filter-search">
+            <span>Search</span>
+            <input
+              name="search"
+              onChange={onCustomerFilterChange}
+              placeholder="Search by name, description, or category"
+              type="search"
+              value={customerFilters.search}
+            />
+          </label>
+
+          <label className="filter-field">
+            <span>Category</span>
+            <select name="category" onChange={onCustomerFilterChange} value={customerFilters.category}>
+              <option value="all">All categories</option>
+              {availableCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="filter-field">
+            <span>Min Price</span>
+            <input min="0" name="minPrice" onChange={onCustomerFilterChange} placeholder="0" type="number" value={customerFilters.minPrice} />
+          </label>
+
+          <label className="filter-field">
+            <span>Max Price</span>
+            <input min="0" name="maxPrice" onChange={onCustomerFilterChange} placeholder="5000" type="number" value={customerFilters.maxPrice} />
+          </label>
+        </div>
+
+        <div className="filter-summary">
+          <p>
+            Showing {products.length} of {allProductsCount} products.
+          </p>
+          <button className="ghost-button" disabled={!hasActiveCustomerFilters} onClick={onResetCustomerFilters} type="button">
+            Clear Filters
+          </button>
+        </div>
+      </article>
+
+      <ProductCatalog
+        hasActiveFilters={hasActiveCustomerFilters}
+        isLoadingProducts={isLoadingProducts}
+        products={products}
+        totalProductsCount={allProductsCount}
+      />
     </section>
   );
 }

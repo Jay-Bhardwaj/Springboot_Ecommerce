@@ -14,6 +14,12 @@ const EMPTY_PRODUCT_FORM = {
   imageUrl: "",
   stockQuantity: "",
 };
+const EMPTY_CUSTOMER_FILTERS = {
+  search: "",
+  category: "all",
+  minPrice: "",
+  maxPrice: "",
+};
 
 function AppShell() {
   const [authView, setAuthView] = useState("admin-login");
@@ -21,6 +27,7 @@ function AppShell() {
   const [userForm, setUserForm] = useState(EMPTY_USER_FORM);
   const [productForm, setProductForm] = useState(EMPTY_PRODUCT_FORM);
   const [products, setProducts] = useState([]);
+  const [customerFilters, setCustomerFilters] = useState(EMPTY_CUSTOMER_FILTERS);
   const [editingProductId, setEditingProductId] = useState(null);
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
@@ -130,6 +137,15 @@ function AppShell() {
   const handleProductInputChange = (event) => {
     const { name, value } = event.target;
     setProductForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleCustomerFilterChange = (event) => {
+    const { name, value } = event.target;
+    setCustomerFilters((current) => ({ ...current, [name]: value }));
+  };
+
+  const resetCustomerFilters = () => {
+    setCustomerFilters(EMPTY_CUSTOMER_FILTERS);
   };
 
   const switchAuthView = (nextView) => {
@@ -287,9 +303,43 @@ function AppShell() {
 
   const handleLogout = () => {
     clearSession();
+    resetCustomerFilters();
     setAuthView("admin-login");
     toast.info("Logged out.");
   };
+
+  const availableCategories = Array.from(
+    new Set(
+      products
+        .map((product) => (product.category || "").trim())
+        .filter(Boolean)
+    )
+  ).sort((first, second) => first.localeCompare(second));
+
+  const searchTerm = customerFilters.search.trim().toLowerCase();
+  const minPrice = customerFilters.minPrice === "" ? null : Number(customerFilters.minPrice);
+  const maxPrice = customerFilters.maxPrice === "" ? null : Number(customerFilters.maxPrice);
+
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch =
+      !searchTerm ||
+      [product.name, product.description, product.category]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(searchTerm));
+
+    const matchesCategory =
+      customerFilters.category === "all" || product.category === customerFilters.category;
+
+    const productPrice = Number(product.price);
+    const matchesMinPrice = minPrice === null || productPrice >= minPrice;
+    const matchesMaxPrice = maxPrice === null || productPrice <= maxPrice;
+
+    return matchesSearch && matchesCategory && matchesMinPrice && matchesMaxPrice;
+  });
+
+  const hasActiveCustomerFilters = Object.entries(customerFilters).some(([key, value]) =>
+    key === "category" ? value !== "all" : value !== ""
+  );
 
   return (
     <>
@@ -307,7 +357,13 @@ function AppShell() {
           onResetProductForm={resetProductForm}
           onSaveProduct={handleSaveProduct}
           productForm={productForm}
-          products={products}
+          products={isAdmin ? products : filteredProducts}
+          allProductsCount={products.length}
+          availableCategories={availableCategories}
+          customerFilters={customerFilters}
+          hasActiveCustomerFilters={hasActiveCustomerFilters}
+          onCustomerFilterChange={handleCustomerFilterChange}
+          onResetCustomerFilters={resetCustomerFilters}
           session={session}
           storeMessage={storeMessage}
         />

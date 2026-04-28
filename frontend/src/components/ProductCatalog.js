@@ -1,6 +1,6 @@
 import React from "react";
 
-function ProductCatalog({ isLoadingProducts, products }) {
+function ProductCatalog({ hasActiveFilters, isLoadingProducts, products, totalProductsCount }) {
   if (isLoadingProducts) {
     return <article className="panel catalog-panel"><p className="empty-state">Loading catalog...</p></article>;
   }
@@ -8,7 +8,13 @@ function ProductCatalog({ isLoadingProducts, products }) {
   if (products.length === 0) {
     return (
       <article className="panel catalog-panel">
-        <p className="empty-state">No products are available yet. Add some as admin first.</p>
+        <p className="empty-state">
+          {totalProductsCount === 0
+            ? "No products are available yet. Add some as admin first."
+            : hasActiveFilters
+              ? "No products match the current search and filters."
+              : "No products are available yet. Add some as admin first."}
+        </p>
       </article>
     );
   }
