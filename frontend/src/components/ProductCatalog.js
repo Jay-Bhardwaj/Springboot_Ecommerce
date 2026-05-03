@@ -1,6 +1,6 @@
 import React from "react";
 
-function ProductCatalog({ hasActiveFilters, isLoadingProducts, products, totalProductsCount }) {
+function ProductCatalog({ hasActiveFilters, isLoadingProducts, onSelectProduct, products, totalProductsCount }) {
   if (isLoadingProducts) {
     return <article className="panel catalog-panel"><p className="empty-state">Loading catalog...</p></article>;
   }
@@ -38,6 +38,9 @@ function ProductCatalog({ hasActiveFilters, isLoadingProducts, products, totalPr
               <strong>Rs. {product.price}</strong>
               <span>{product.stockQuantity} in stock</span>
             </div>
+            <button className="primary-button catalog-action" onClick={() => onSelectProduct(product.id)} type="button">
+              View Details
+            </button>
           </div>
         </article>
       ))}

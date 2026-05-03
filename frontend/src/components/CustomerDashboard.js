@@ -1,15 +1,31 @@
 import React from "react";
+import CartSummary from "./CartSummary";
+import ProductDetailsPanel from "./ProductDetailsPanel";
 import ProductCatalog from "./ProductCatalog";
 
 function CustomerDashboard({
   allProductsCount,
   availableCategories,
+  cartDetails,
+  cartItemCount,
   customerFilters,
+  deliveryCharge,
+  freeDeliveryThreshold,
+  gstAmount,
+  gstRate,
   hasActiveCustomerFilters,
   isLoadingProducts,
+  onAddToCart,
   onCustomerFilterChange,
+  onCloseProductDetails,
+  onRemoveCartItem,
   onResetCustomerFilters,
+  onSelectProduct,
+  onUpdateCartQuantity,
   products,
+  selectedProduct,
+  subtotal,
+  totalBill,
 }) {
   return (
     <section className="dashboard-grid customer-grid">
@@ -26,6 +42,12 @@ function CustomerDashboard({
         <span>Matching Products</span>
         <strong>{products.length}</strong>
         <p>{allProductsCount} products are currently in your catalog.</p>
+      </article>
+
+      <article className="panel metric-panel">
+        <span>Cart Items</span>
+        <strong>{cartItemCount}</strong>
+        <p>Total payable is Rs. {totalBill.toFixed(2)} right now.</p>
       </article>
 
       <article className="panel customer-filter-panel">
@@ -81,11 +103,32 @@ function CustomerDashboard({
         </div>
       </article>
 
-      <ProductCatalog
-        hasActiveFilters={hasActiveCustomerFilters}
-        isLoadingProducts={isLoadingProducts}
-        products={products}
-        totalProductsCount={allProductsCount}
+      {selectedProduct ? (
+        <ProductDetailsPanel
+          onAddToCart={onAddToCart}
+          onBack={onCloseProductDetails}
+          product={selectedProduct}
+        />
+      ) : (
+        <ProductCatalog
+          hasActiveFilters={hasActiveCustomerFilters}
+          isLoadingProducts={isLoadingProducts}
+          onSelectProduct={onSelectProduct}
+          products={products}
+          totalProductsCount={allProductsCount}
+        />
+      )}
+
+      <CartSummary
+        cartDetails={cartDetails}
+        deliveryCharge={deliveryCharge}
+        freeDeliveryThreshold={freeDeliveryThreshold}
+        gstAmount={gstAmount}
+        gstRate={gstRate}
+        onRemoveCartItem={onRemoveCartItem}
+        onUpdateCartQuantity={onUpdateCartQuantity}
+        subtotal={subtotal}
+        totalBill={totalBill}
       />
     </section>
   );

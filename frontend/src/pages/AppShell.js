@@ -20,6 +20,9 @@ const EMPTY_CUSTOMER_FILTERS = {
   minPrice: "",
   maxPrice: "",
 };
+const GST_RATE = 0.18;
+const DELIVERY_CHARGE = 40;
+const FREE_DELIVERY_THRESHOLD = 500;
 
 function AppShell() {
   const [authView, setAuthView] = useState("admin-login");
@@ -28,6 +31,8 @@ function AppShell() {
   const [productForm, setProductForm] = useState(EMPTY_PRODUCT_FORM);
   const [products, setProducts] = useState([]);
   const [customerFilters, setCustomerFilters] = useState(EMPTY_CUSTOMER_FILTERS);
+  const [cartItems, setCartItems] = useState([]);
+  const [selectedProductId, setSelectedProductId] = useState(null);
   const [editingProductId, setEditingProductId] = useState(null);
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
@@ -99,6 +104,30 @@ function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!selectedProductId) {
+      return;
+    }
+
+    const matchingProduct = products.find((product) => product.id === selectedProductId);
+
+    if (!matchingProduct) {
+      setSelectedProductId(null);
+      return;
+    }
+    const availableStock = Number(matchingProduct.stockQuantity || 0);
+
+    setCartItems((current) =>
+      current
+        .map((item) =>
+          item.productId === selectedProductId
+            ? { ...item, quantity: Math.min(item.quantity, availableStock) }
+            : item
+        )
+        .filter((item) => item.quantity > 0)
+    );
+  }, [products, selectedProductId]);
+
   const isLoggedIn = Boolean(session.token);
   const isAdmin = session.role === "ADMIN";
 
@@ -124,6 +153,8 @@ function AppShell() {
     localStorage.removeItem("userEmail");
     setSession({ token: "", name: "", email: "", role: "" });
     setProducts([]);
+    setCartItems([]);
+    setSelectedProductId(null);
     setEditingProductId(null);
     setProductForm(EMPTY_PRODUCT_FORM);
     setStoreMessage("Sign in to open your ecommerce workspace.");
@@ -146,6 +177,69 @@ function AppShell() {
 
   const resetCustomerFilters = () => {
     setCustomerFilters(EMPTY_CUSTOMER_FILTERS);
+  };
+
+  const handleSelectProduct = (productId) => {
+    setSelectedProductId(productId);
+  };
+
+  const handleCloseProductDetails = () => {
+    setSelectedProductId(null);
+  };
+
+  const handleAddToCart = (productId, quantity = 1) => {
+    const product = products.find((item) => item.id === productId);
+
+    if (!product) {
+      return;
+    }
+
+    const availableStock = Number(product.stockQuantity || 0);
+
+    if (availableStock <= 0) {
+      toast.error("This product is currently out of stock.");
+      return;
+    }
+
+    setCartItems((current) => {
+      const existingItem = current.find((item) => item.productId === productId);
+      const nextQuantity = Math.max(1, Number(quantity) || 1);
+
+      if (!existingItem) {
+        return [...current, { productId, quantity: Math.min(nextQuantity, availableStock) }];
+      }
+
+      return current.map((item) =>
+        item.productId === productId
+          ? { ...item, quantity: Math.min(item.quantity + nextQuantity, availableStock) }
+          : item
+      );
+    });
+
+    toast.success(`${product.name} added to cart.`);
+  };
+
+  const handleUpdateCartQuantity = (productId, nextQuantity) => {
+    const product = products.find((item) => item.id === productId);
+
+    if (!product) {
+      return;
+    }
+
+    const availableStock = Number(product.stockQuantity || 0);
+    const normalizedQuantity = Math.min(Math.max(nextQuantity, 0), availableStock);
+
+    setCartItems((current) =>
+      normalizedQuantity === 0
+        ? current.filter((item) => item.productId !== productId)
+        : current.map((item) =>
+            item.productId === productId ? { ...item, quantity: normalizedQuantity } : item
+          )
+    );
+  };
+
+  const handleRemoveCartItem = (productId) => {
+    setCartItems((current) => current.filter((item) => item.productId !== productId));
   };
 
   const switchAuthView = (nextView) => {
@@ -341,6 +435,34 @@ function AppShell() {
     key === "category" ? value !== "all" : value !== ""
   );
 
+  const selectedProduct = products.find((product) => product.id === selectedProductId) || null;
+
+  const cartDetails = cartItems
+    .map((item) => {
+      const product = products.find((entry) => entry.id === item.productId);
+
+      if (!product) {
+        return null;
+      }
+
+      const unitPrice = Number(product.price || 0);
+
+      return {
+        ...item,
+        name: product.name,
+        unitPrice,
+        lineTotal: unitPrice * item.quantity,
+      };
+    })
+    .filter(Boolean);
+
+  const cartItemCount = cartDetails.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = cartDetails.reduce((sum, item) => sum + item.lineTotal, 0);
+  const gstAmount = subtotal * GST_RATE;
+  const deliveryCharge =
+    subtotal > 0 && subtotal < FREE_DELIVERY_THRESHOLD ? DELIVERY_CHARGE : 0;
+  const totalBill = subtotal + gstAmount + deliveryCharge;
+
   return (
     <>
       {isLoggedIn ? (
@@ -360,12 +482,26 @@ function AppShell() {
           products={isAdmin ? products : filteredProducts}
           allProductsCount={products.length}
           availableCategories={availableCategories}
+          cartItemCount={cartItemCount}
+          cartDetails={cartDetails}
           customerFilters={customerFilters}
+          deliveryCharge={deliveryCharge}
+          freeDeliveryThreshold={FREE_DELIVERY_THRESHOLD}
+          gstAmount={gstAmount}
+          gstRate={GST_RATE}
           hasActiveCustomerFilters={hasActiveCustomerFilters}
+          onAddToCart={handleAddToCart}
           onCustomerFilterChange={handleCustomerFilterChange}
+          onCloseProductDetails={handleCloseProductDetails}
+          onRemoveCartItem={handleRemoveCartItem}
           onResetCustomerFilters={resetCustomerFilters}
+          onSelectProduct={handleSelectProduct}
+          onUpdateCartQuantity={handleUpdateCartQuantity}
+          selectedProduct={selectedProduct}
           session={session}
           storeMessage={storeMessage}
+          subtotal={subtotal}
+          totalBill={totalBill}
         />
       ) : (
         <AuthPage

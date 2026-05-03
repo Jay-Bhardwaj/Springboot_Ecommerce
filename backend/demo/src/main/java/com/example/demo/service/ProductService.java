@@ -5,15 +5,18 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.entity.Product;
+import com.example.demo.repository.CartItemRepository;
 import com.example.demo.repository.ProductRepository;
 
 @Service
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CartItemRepository cartItemRepository;
 
-    public ProductService(ProductRepository productRepository) {
+    public ProductService(ProductRepository productRepository, CartItemRepository cartItemRepository) {
         this.productRepository = productRepository;
+        this.cartItemRepository = cartItemRepository;
     }
 
     public List<Product> getAllProducts() {
@@ -43,6 +46,7 @@ public class ProductService {
             throw new IllegalArgumentException("Product not found");
         }
 
+        cartItemRepository.deleteByProductId(id);
         productRepository.deleteById(id);
     }
 }
