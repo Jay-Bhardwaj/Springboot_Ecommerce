@@ -47,10 +47,7 @@ function ProductDetailsPanel({ onAddToCart, onBack, product }) {
               <span>Price</span>
               <strong>Rs. {Number(product.price || 0).toFixed(2)}</strong>
             </div>
-            <div>
-              <span>Stock</span>
-              <strong>{availableStock} available</strong>
-            </div>
+            
           </div>
 
           <div className="detail-cart-row">

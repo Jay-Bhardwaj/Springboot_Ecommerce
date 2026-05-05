@@ -36,7 +36,7 @@ function ProductCatalog({ hasActiveFilters, isLoadingProducts, onSelectProduct, 
             <p>{product.description}</p>
             <div className="catalog-footer">
               <strong>Rs. {product.price}</strong>
-              <span>{product.stockQuantity} in stock</span>
+             
             </div>
             <button className="primary-button catalog-action" onClick={() => onSelectProduct(product.id)} type="button">
               View Details

@@ -37,6 +37,7 @@ function AppShell() {
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [isLoadingCart, setIsLoadingCart] = useState(false);
   const [storeMessage, setStoreMessage] = useState("Sign in to open your ecommerce workspace.");
 
   const fetchDashboardGreeting = async (token) => {
@@ -81,6 +82,149 @@ function AppShell() {
     }
   };
 
+  // ✅ FETCH CART FROM BACKEND
+  const fetchCartFromBackend = async (token = session.token) => {
+    if (!token) {
+      return;
+    }
+
+    setIsLoadingCart(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/cart`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to load cart");
+      }
+
+      const cartData = await response.json();
+      // Convert backend response to frontend format
+      const formattedItems = cartData.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      }));
+      setCartItems(formattedItems);
+    } catch (error) {
+      console.error("Could not load cart:", error);
+      // Silently fail on cart load to not interrupt user experience
+    } finally {
+      setIsLoadingCart(false);
+    }
+  };
+
+  // ✅ ADD TO CART WITH BACKEND API
+  const handleAddToCart = async (productId, quantity = 1) => {
+    const product = products.find((item) => item.id === productId);
+
+    if (!product) {
+      return;
+    }
+
+    const availableStock = Number(product.stockQuantity || 0);
+
+    if (availableStock <= 0) {
+      toast.error("This product is currently out of stock.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/cart/items`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.token}`,
+        },
+        body: JSON.stringify({ productId, quantity }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || "Failed to add to cart");
+      }
+
+      const cartData = await response.json();
+      // Update local state with backend response
+      const formattedItems = cartData.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      }));
+      setCartItems(formattedItems);
+      toast.success(`${product.name} added to cart.`);
+    } catch (error) {
+      toast.error(error.message || "Could not add item to cart.");
+    }
+  };
+
+  // ✅ UPDATE CART QUANTITY WITH BACKEND API
+  const handleUpdateCartQuantity = async (productId, nextQuantity) => {
+    const product = products.find((item) => item.id === productId);
+
+    if (!product) {
+      return;
+    }
+
+    const availableStock = Number(product.stockQuantity || 0);
+    const normalizedQuantity = Math.min(Math.max(nextQuantity, 0), availableStock);
+
+    try {
+      if (normalizedQuantity === 0) {
+        // If quantity is 0, remove from cart
+        await handleRemoveCartItem(productId);
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/cart/items/${productId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.token}`,
+        },
+        body: JSON.stringify({ quantity: normalizedQuantity }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update cart");
+      }
+
+      const cartData = await response.json();
+      // Update local state with backend response
+      const formattedItems = cartData.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      }));
+      setCartItems(formattedItems);
+    } catch (error) {
+      toast.error(error.message || "Could not update cart item.");
+    }
+  };
+
+  // ✅ REMOVE FROM CART WITH BACKEND API
+  const handleRemoveCartItem = async (productId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cart/items/${productId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session.token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to remove from cart");
+      }
+
+      const cartData = await response.json();
+      // Update local state with backend response
+      const formattedItems = cartData.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      }));
+      setCartItems(formattedItems);
+      toast.success("Item removed from cart.");
+    } catch (error) {
+      toast.error(error.message || "Could not remove item from cart.");
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("userRole");
@@ -98,6 +242,10 @@ function AppShell() {
     const restoreWorkspace = async () => {
       await fetchProducts(token);
       await fetchDashboardGreeting(token);
+      // ✅ FETCH CART ON SESSION RESTORE
+      if (role === "CUSTOMER") {
+        await fetchCartFromBackend(token);
+      }
     };
 
     restoreWorkspace();
@@ -187,61 +335,6 @@ function AppShell() {
     setSelectedProductId(null);
   };
 
-  const handleAddToCart = (productId, quantity = 1) => {
-    const product = products.find((item) => item.id === productId);
-
-    if (!product) {
-      return;
-    }
-
-    const availableStock = Number(product.stockQuantity || 0);
-
-    if (availableStock <= 0) {
-      toast.error("This product is currently out of stock.");
-      return;
-    }
-
-    setCartItems((current) => {
-      const existingItem = current.find((item) => item.productId === productId);
-      const nextQuantity = Math.max(1, Number(quantity) || 1);
-
-      if (!existingItem) {
-        return [...current, { productId, quantity: Math.min(nextQuantity, availableStock) }];
-      }
-
-      return current.map((item) =>
-        item.productId === productId
-          ? { ...item, quantity: Math.min(item.quantity + nextQuantity, availableStock) }
-          : item
-      );
-    });
-
-    toast.success(`${product.name} added to cart.`);
-  };
-
-  const handleUpdateCartQuantity = (productId, nextQuantity) => {
-    const product = products.find((item) => item.id === productId);
-
-    if (!product) {
-      return;
-    }
-
-    const availableStock = Number(product.stockQuantity || 0);
-    const normalizedQuantity = Math.min(Math.max(nextQuantity, 0), availableStock);
-
-    setCartItems((current) =>
-      normalizedQuantity === 0
-        ? current.filter((item) => item.productId !== productId)
-        : current.map((item) =>
-            item.productId === productId ? { ...item, quantity: normalizedQuantity } : item
-          )
-    );
-  };
-
-  const handleRemoveCartItem = (productId) => {
-    setCartItems((current) => current.filter((item) => item.productId !== productId));
-  };
-
   const switchAuthView = (nextView) => {
     setAuthView(nextView);
     setUserForm((current) => ({ ...EMPTY_USER_FORM, email: current.email }));
@@ -301,6 +394,10 @@ function AppShell() {
       setUserForm(EMPTY_USER_FORM);
       await fetchProducts(payload.token);
       await fetchDashboardGreeting(payload.token);
+      // ✅ FETCH CART AFTER LOGIN
+      if (expectedRole === "CUSTOMER") {
+        await fetchCartFromBackend(payload.token);
+      }
       toast.success(expectedRole === "ADMIN" ? "Admin login successful." : "Customer login successful.");
     } catch (error) {
       toast.error(error.message || "Login failed.");

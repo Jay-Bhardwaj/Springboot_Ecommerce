@@ -1,6 +1,6 @@
 import React from "react";
 import CartSummary from "./CartSummary";
-import ProductDetailsPanel from "./ProductDetailsPanel";
+import ProductDetailPage from "./ProductDetailPage";
 import ProductCatalog from "./ProductCatalog";
 
 function CustomerDashboard({
@@ -27,6 +27,20 @@ function CustomerDashboard({
   subtotal,
   totalBill,
 }) {
+  // If a product is selected, show the full detail page
+  if (selectedProduct) {
+    return (
+      <section>
+        <ProductDetailPage
+          onAddToCart={onAddToCart}
+          onBack={onCloseProductDetails}
+          product={selectedProduct}
+        />
+      </section>
+    );
+  }
+
+  // Otherwise show the catalog view
   return (
     <section className="dashboard-grid customer-grid">
       <article className="panel spotlight-panel">
@@ -103,21 +117,13 @@ function CustomerDashboard({
         </div>
       </article>
 
-      {selectedProduct ? (
-        <ProductDetailsPanel
-          onAddToCart={onAddToCart}
-          onBack={onCloseProductDetails}
-          product={selectedProduct}
-        />
-      ) : (
-        <ProductCatalog
-          hasActiveFilters={hasActiveCustomerFilters}
-          isLoadingProducts={isLoadingProducts}
-          onSelectProduct={onSelectProduct}
-          products={products}
-          totalProductsCount={allProductsCount}
-        />
-      )}
+      <ProductCatalog
+        hasActiveFilters={hasActiveCustomerFilters}
+        isLoadingProducts={isLoadingProducts}
+        onSelectProduct={onSelectProduct}
+        products={products}
+        totalProductsCount={allProductsCount}
+      />
 
       <CartSummary
         cartDetails={cartDetails}
