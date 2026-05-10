@@ -1,5 +1,6 @@
 @import "./auth.css";
 @import "./dashboard.css";
+@import "./checkout.css";
 
 :root {
   --bg: #f6f3ee;

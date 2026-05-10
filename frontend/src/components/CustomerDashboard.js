@@ -18,6 +18,7 @@ function CustomerDashboard({
   onAddToCart,
   onCustomerFilterChange,
   onCloseProductDetails,
+  onProceedToCheckout,
   onRemoveCartItem,
   onResetCustomerFilters,
   onSelectProduct,
@@ -131,6 +132,7 @@ function CustomerDashboard({
         freeDeliveryThreshold={freeDeliveryThreshold}
         gstAmount={gstAmount}
         gstRate={gstRate}
+        onProceedToCheckout={onProceedToCheckout}
         onRemoveCartItem={onRemoveCartItem}
         onUpdateCartQuantity={onUpdateCartQuantity}
         subtotal={subtotal}

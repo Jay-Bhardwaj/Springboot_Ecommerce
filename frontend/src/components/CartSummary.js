@@ -6,6 +6,7 @@ function CartSummary({
   freeDeliveryThreshold,
   gstAmount,
   gstRate,
+  onProceedToCheckout,
   onRemoveCartItem,
   onUpdateCartQuantity,
   subtotal,
@@ -80,6 +81,9 @@ function CartSummary({
               <span>Total Bill</span>
               <strong>Rs. {totalBill.toFixed(2)}</strong>
             </div>
+            <button className="primary-button" onClick={onProceedToCheckout} type="button">
+              Proceed to Checkout
+            </button>
           </div>
         </>
       )}

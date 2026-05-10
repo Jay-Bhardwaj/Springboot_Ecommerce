@@ -14,7 +14,7 @@ function DashboardHero({ isAdmin, onLogout, onRefreshProducts, session, storeMes
       </div>
 
       <div className="hero-actions">
-        <button className="primary-button" onClick={onRefreshProducts} type="button">
+        <button className="primary-button" onClick={() => onRefreshProducts()} type="button">
           Refresh Products
         </button>
         <button className="ghost-button" onClick={onLogout} type="button">

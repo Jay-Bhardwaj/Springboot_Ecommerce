@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthPage from "./AuthPage";
+import CheckoutPage from "./CheckoutPage";
 import DashboardPage from "./DashboardPage";
 
 const API_BASE_URL = "http://localhost:8080";
@@ -20,24 +21,36 @@ const EMPTY_CUSTOMER_FILTERS = {
   minPrice: "",
   maxPrice: "",
 };
+const EMPTY_CHECKOUT_FORM = {
+  customerName: "",
+  phoneNumber: "",
+  addressLine1: "",
+  addressLine2: "",
+  city: "",
+  state: "",
+  postalCode: "",
+};
 const GST_RATE = 0.18;
 const DELIVERY_CHARGE = 40;
 const FREE_DELIVERY_THRESHOLD = 500;
 
 function AppShell() {
   const [authView, setAuthView] = useState("admin-login");
+  const [customerView, setCustomerView] = useState("dashboard");
   const [session, setSession] = useState({ token: "", name: "", email: "", role: "" });
   const [userForm, setUserForm] = useState(EMPTY_USER_FORM);
   const [productForm, setProductForm] = useState(EMPTY_PRODUCT_FORM);
   const [products, setProducts] = useState([]);
   const [customerFilters, setCustomerFilters] = useState(EMPTY_CUSTOMER_FILTERS);
+  const [checkoutForm, setCheckoutForm] = useState(EMPTY_CHECKOUT_FORM);
   const [cartItems, setCartItems] = useState([]);
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [editingProductId, setEditingProductId] = useState(null);
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
-  const [isLoadingCart, setIsLoadingCart] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [placedOrder, setPlacedOrder] = useState(null);
   const [storeMessage, setStoreMessage] = useState("Sign in to open your ecommerce workspace.");
 
   const fetchDashboardGreeting = async (token) => {
@@ -88,8 +101,6 @@ function AppShell() {
       return;
     }
 
-    setIsLoadingCart(true);
-
     try {
       const response = await fetch(`${API_BASE_URL}/cart`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -109,8 +120,6 @@ function AppShell() {
     } catch (error) {
       console.error("Could not load cart:", error);
       // Silently fail on cart load to not interrupt user experience
-    } finally {
-      setIsLoadingCart(false);
     }
   };
 
@@ -304,6 +313,9 @@ function AppShell() {
     setCartItems([]);
     setSelectedProductId(null);
     setEditingProductId(null);
+    setCustomerView("dashboard");
+    setCheckoutForm(EMPTY_CHECKOUT_FORM);
+    setPlacedOrder(null);
     setProductForm(EMPTY_PRODUCT_FORM);
     setStoreMessage("Sign in to open your ecommerce workspace.");
   };
@@ -323,6 +335,11 @@ function AppShell() {
     setCustomerFilters((current) => ({ ...current, [name]: value }));
   };
 
+  const handleCheckoutInputChange = (event) => {
+    const { name, value } = event.target;
+    setCheckoutForm((current) => ({ ...current, [name]: value }));
+  };
+
   const resetCustomerFilters = () => {
     setCustomerFilters(EMPTY_CUSTOMER_FILTERS);
   };
@@ -333,6 +350,26 @@ function AppShell() {
 
   const handleCloseProductDetails = () => {
     setSelectedProductId(null);
+  };
+
+  const openCheckoutPage = () => {
+    if (cartItems.length === 0) {
+      toast.error("Add products to your cart before checkout.");
+      return;
+    }
+
+    setPlacedOrder(null);
+    setCheckoutForm((current) => ({
+      ...EMPTY_CHECKOUT_FORM,
+      ...current,
+      customerName: current.customerName || session.name || "",
+    }));
+    setCustomerView("checkout");
+  };
+
+  const returnToDashboard = () => {
+    setPlacedOrder(null);
+    setCustomerView("dashboard");
   };
 
   const switchAuthView = (nextView) => {
@@ -392,6 +429,9 @@ function AppShell() {
 
       persistSession(payload);
       setUserForm(EMPTY_USER_FORM);
+      setCheckoutForm((current) => ({ ...current, customerName: payload.name || "" }));
+      setPlacedOrder(null);
+      setCustomerView("dashboard");
       await fetchProducts(payload.token);
       await fetchDashboardGreeting(payload.token);
       // ✅ FETCH CART AFTER LOGIN
@@ -499,6 +539,47 @@ function AppShell() {
     toast.info("Logged out.");
   };
 
+  const handlePlaceOrder = async (event) => {
+    event.preventDefault();
+
+    if (cartDetails.length === 0) {
+      toast.error("Your cart is empty.");
+      return;
+    }
+
+    setIsPlacingOrder(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.token}`,
+        },
+        body: JSON.stringify(checkoutForm),
+      });
+
+      const contentType = response.headers.get("content-type") || "";
+      const payload = contentType.includes("application/json")
+        ? await response.json()
+        : { message: await response.text() };
+
+      if (!response.ok) {
+        throw new Error(payload.message || "Could not place order");
+      }
+
+      setPlacedOrder(payload);
+      setCartItems([]);
+      setSelectedProductId(null);
+      await fetchProducts();
+      toast.success("Order placed successfully.");
+    } catch (error) {
+      toast.error(error.message || "Could not place order.");
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  };
+
   const availableCategories = Array.from(
     new Set(
       products
@@ -547,6 +628,8 @@ function AppShell() {
       return {
         ...item,
         name: product.name,
+        category: product.category,
+        imageUrl: product.imageUrl,
         unitPrice,
         lineTotal: unitPrice * item.quantity,
       };
@@ -559,47 +642,75 @@ function AppShell() {
   const deliveryCharge =
     subtotal > 0 && subtotal < FREE_DELIVERY_THRESHOLD ? DELIVERY_CHARGE : 0;
   const totalBill = subtotal + gstAmount + deliveryCharge;
+  const estimatedArrivalDate = new Date();
+  estimatedArrivalDate.setDate(estimatedArrivalDate.getDate() + 4);
+  const estimatedArrivalLabel = estimatedArrivalDate.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <>
       {isLoggedIn ? (
-        <DashboardPage
-          editingProductId={editingProductId}
-          isAdmin={isAdmin}
-          isLoadingProducts={isLoadingProducts}
-          isSavingProduct={isSavingProduct}
-          onDeleteProduct={handleDeleteProduct}
-          onEditProduct={handleEditProduct}
-          onLogout={handleLogout}
-          onProductInputChange={handleProductInputChange}
-          onRefreshProducts={fetchProducts}
-          onResetProductForm={resetProductForm}
-          onSaveProduct={handleSaveProduct}
-          productForm={productForm}
-          products={isAdmin ? products : filteredProducts}
-          allProductsCount={products.length}
-          availableCategories={availableCategories}
-          cartItemCount={cartItemCount}
-          cartDetails={cartDetails}
-          customerFilters={customerFilters}
-          deliveryCharge={deliveryCharge}
-          freeDeliveryThreshold={FREE_DELIVERY_THRESHOLD}
-          gstAmount={gstAmount}
-          gstRate={GST_RATE}
-          hasActiveCustomerFilters={hasActiveCustomerFilters}
-          onAddToCart={handleAddToCart}
-          onCustomerFilterChange={handleCustomerFilterChange}
-          onCloseProductDetails={handleCloseProductDetails}
-          onRemoveCartItem={handleRemoveCartItem}
-          onResetCustomerFilters={resetCustomerFilters}
-          onSelectProduct={handleSelectProduct}
-          onUpdateCartQuantity={handleUpdateCartQuantity}
-          selectedProduct={selectedProduct}
-          session={session}
-          storeMessage={storeMessage}
-          subtotal={subtotal}
-          totalBill={totalBill}
-        />
+        !isAdmin && customerView === "checkout" ? (
+          <CheckoutPage
+            cartDetails={cartDetails}
+            checkoutForm={checkoutForm}
+            deliveryCharge={deliveryCharge}
+            estimatedArrivalLabel={estimatedArrivalLabel}
+            freeDeliveryThreshold={FREE_DELIVERY_THRESHOLD}
+            gstAmount={gstAmount}
+            gstRate={GST_RATE}
+            isPlacingOrder={isPlacingOrder}
+            onBack={returnToDashboard}
+            onChange={handleCheckoutInputChange}
+            onPlaceOrder={handlePlaceOrder}
+            placedOrder={placedOrder}
+            session={session}
+            subtotal={subtotal}
+            totalBill={totalBill}
+          />
+        ) : (
+          <DashboardPage
+            editingProductId={editingProductId}
+            isAdmin={isAdmin}
+            isLoadingProducts={isLoadingProducts}
+            isSavingProduct={isSavingProduct}
+            onDeleteProduct={handleDeleteProduct}
+            onEditProduct={handleEditProduct}
+            onLogout={handleLogout}
+            onProceedToCheckout={openCheckoutPage}
+            onProductInputChange={handleProductInputChange}
+            onRefreshProducts={fetchProducts}
+            onResetProductForm={resetProductForm}
+            onSaveProduct={handleSaveProduct}
+            productForm={productForm}
+            products={isAdmin ? products : filteredProducts}
+            allProductsCount={products.length}
+            availableCategories={availableCategories}
+            cartItemCount={cartItemCount}
+            cartDetails={cartDetails}
+            customerFilters={customerFilters}
+            deliveryCharge={deliveryCharge}
+            freeDeliveryThreshold={FREE_DELIVERY_THRESHOLD}
+            gstAmount={gstAmount}
+            gstRate={GST_RATE}
+            hasActiveCustomerFilters={hasActiveCustomerFilters}
+            onAddToCart={handleAddToCart}
+            onCustomerFilterChange={handleCustomerFilterChange}
+            onCloseProductDetails={handleCloseProductDetails}
+            onRemoveCartItem={handleRemoveCartItem}
+            onResetCustomerFilters={resetCustomerFilters}
+            onSelectProduct={handleSelectProduct}
+            onUpdateCartQuantity={handleUpdateCartQuantity}
+            selectedProduct={selectedProduct}
+            session={session}
+            storeMessage={storeMessage}
+            subtotal={subtotal}
+            totalBill={totalBill}
+          />
+        )
       ) : (
         <AuthPage
           authView={authView}
