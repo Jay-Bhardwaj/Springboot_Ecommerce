@@ -453,9 +453,31 @@ function AppShell() {
         body: JSON.stringify(userForm),
       });
 
-      const message = await response.text();
+      const contentType = response.headers.get("content-type") || "";
+      let errorMessage = "Registration failed";
 
-      if (!response.ok || !message.toLowerCase().includes("success")) {
+      if (!response.ok) {
+        // Try to parse as JSON (from Global Exception Handler)
+        if (contentType.includes("application/json")) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || "Registration failed";
+          } catch {
+            errorMessage = await response.text() || "Registration failed";
+          }
+        } else {
+          // Plain text response
+          errorMessage = await response.text() || "Registration failed";
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Success response - parse as text or JSON
+      const message = contentType.includes("application/json")
+        ? (await response.json()).message || "Registration successful"
+        : await response.text();
+
+      if (!message.toLowerCase().includes("success")) {
         throw new Error(message || "Registration failed");
       }
 
@@ -485,7 +507,7 @@ function AppShell() {
       const payload = contentType.includes("application/json") ? await response.json() : { message: await response.text() };
 
       if (!response.ok) {
-        throw new Error(payload.message || "Invalid credentials");
+        throw new Error(payload.error || payload.message || "Invalid credentials");
       }
 
       if (payload.role !== expectedRole) {
@@ -619,7 +641,16 @@ function AppShell() {
         body: JSON.stringify(passwordResetForm),
       });
 
-      const message = await response.text();
+      const contentType = response.headers.get("content-type") || "";
+      let message = "";
+
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        message = data.error || data.message || "Password reset failed";
+      } else {
+        message = await response.text();
+      }
+
       if (!response.ok || !message.toLowerCase().includes("success")) {
         throw new Error(message || "Password reset failed");
       }
@@ -653,7 +684,7 @@ function AppShell() {
         : { message: await response.text() };
 
       if (!response.ok) {
-        throw new Error(payload.message || "Could not update profile");
+        throw new Error(payload.error || payload.message || "Could not update profile");
       }
 
       const nextSession = {
@@ -704,7 +735,7 @@ function AppShell() {
         : { message: await response.text() };
 
       if (!response.ok) {
-        throw new Error(payload.message || "Could not place order");
+        throw new Error(payload.error || payload.message || "Could not place order");
       }
 
       setPlacedOrder(payload);
