@@ -443,54 +443,40 @@ function AppShell() {
   };
 
   const handleRegister = async (event) => {
-    event.preventDefault();
-    setIsSubmittingAuth(true);
+  event.preventDefault();
+  setIsSubmittingAuth(true);
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/user/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userForm),
-      });
+  try {
+    const response = await fetch(`${API_BASE_URL}/user/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userForm),
+    });
 
-      const contentType = response.headers.get("content-type") || "";
-      let errorMessage = "Registration failed";
+    const contentType = response.headers.get("content-type") || "";
+    let errorMessage = "Registration failed";
 
-      if (!response.ok) {
-        // Try to parse as JSON (from Global Exception Handler)
-        if (contentType.includes("application/json")) {
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || "Registration failed";
-          } catch {
-            errorMessage = await response.text() || "Registration failed";
-          }
-        } else {
-          // Plain text response
+    if (!response.ok) {
+      // Extract just the error message from JSON
+      if (contentType.includes("application/json")) {
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || "Registration failed";
+        } catch {
           errorMessage = await response.text() || "Registration failed";
         }
-        throw new Error(errorMessage);
+      } else {
+        errorMessage = await response.text() || "Registration failed";
       }
-
-      // Success response - parse as text or JSON
-      const message = contentType.includes("application/json")
-        ? (await response.json()).message || "Registration successful"
-        : await response.text();
-
-      if (!message.toLowerCase().includes("success")) {
-        throw new Error(message || "Registration failed");
-      }
-
-      toast.success("Customer account created. Please log in.");
-      setStoreMessage("Registration complete. Customer login is ready.");
-      setUserForm(EMPTY_USER_FORM);
-      setAuthView("customer-login");
-    } catch (error) {
-      toast.error(error.message || "Registration failed.");
-    } finally {
-      setIsSubmittingAuth(false);
+      throw new Error(errorMessage);
     }
-  };
+    // ... rest of code
+  } catch (error) {
+    toast.error(error.message || "Registration failed.");
+  } finally {
+    setIsSubmittingAuth(false);
+  }
+};
 
   const loginWithRole = async (event, expectedRole) => {
     event.preventDefault();
@@ -507,7 +493,7 @@ function AppShell() {
       const payload = contentType.includes("application/json") ? await response.json() : { message: await response.text() };
 
       if (!response.ok) {
-        throw new Error(payload.error || payload.message || "Invalid credentials");
+        throw new Error(payload.message || "Invalid credentials");
       }
 
       if (payload.role !== expectedRole) {
@@ -641,16 +627,7 @@ function AppShell() {
         body: JSON.stringify(passwordResetForm),
       });
 
-      const contentType = response.headers.get("content-type") || "";
-      let message = "";
-
-      if (contentType.includes("application/json")) {
-        const data = await response.json();
-        message = data.error || data.message || "Password reset failed";
-      } else {
-        message = await response.text();
-      }
-
+      const message = await response.text();
       if (!response.ok || !message.toLowerCase().includes("success")) {
         throw new Error(message || "Password reset failed");
       }
@@ -684,7 +661,7 @@ function AppShell() {
         : { message: await response.text() };
 
       if (!response.ok) {
-        throw new Error(payload.error || payload.message || "Could not update profile");
+        throw new Error(payload.message || "Could not update profile");
       }
 
       const nextSession = {
@@ -735,7 +712,7 @@ function AppShell() {
         : { message: await response.text() };
 
       if (!response.ok) {
-        throw new Error(payload.error || payload.message || "Could not place order");
+        throw new Error(payload.message || "Could not place order");
       }
 
       setPlacedOrder(payload);
