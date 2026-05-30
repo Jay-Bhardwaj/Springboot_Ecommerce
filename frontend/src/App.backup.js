@@ -36,7 +36,7 @@ function App() {
       toast.success("✅ Registered successfully!");
       setIsLogin(true);
     } else {
-      toast.error("❌ Registration failed");
+      toast.error("❌ Must Contains Gmail");
     }
   };
 

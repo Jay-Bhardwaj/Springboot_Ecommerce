@@ -17,6 +17,9 @@ public class CheckoutResponse {
     private final String city;
     private final String state;
     private final String postalCode;
+    private final String orderStatus;
+    private final String paymentMethod;
+    private final String paymentStatus;
     private final Integer totalItems;
     private final BigDecimal subtotal;
     private final BigDecimal gstRate;
@@ -38,6 +41,9 @@ public class CheckoutResponse {
             String city,
             String state,
             String postalCode,
+            String orderStatus,
+            String paymentMethod,
+            String paymentStatus,
             Integer totalItems,
             BigDecimal subtotal,
             BigDecimal gstRate,
@@ -57,6 +63,9 @@ public class CheckoutResponse {
         this.city = city;
         this.state = state;
         this.postalCode = postalCode;
+        this.orderStatus = orderStatus;
+        this.paymentMethod = paymentMethod;
+        this.paymentStatus = paymentStatus;
         this.totalItems = totalItems;
         this.subtotal = subtotal;
         this.gstRate = gstRate;
@@ -106,6 +115,18 @@ public class CheckoutResponse {
 
     public String getPostalCode() {
         return postalCode;
+    }
+
+    public String getOrderStatus() {
+        return orderStatus;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
     }
 
     public Integer getTotalItems() {

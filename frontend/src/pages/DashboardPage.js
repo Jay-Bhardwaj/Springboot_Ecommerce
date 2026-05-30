@@ -8,8 +8,14 @@ function DashboardPage(props) {
   return (
     <main className="dashboard-shell">
       <DashboardHero
+        allProductsCount={props.allProductsCount}
+        availableCategories={props.availableCategories}
+        cartItemCount={props.cartItemCount}
         isAdmin={props.isAdmin}
+        onAddressView={props.onAddressView}
         onLogout={props.onLogout}
+        onOrdersView={props.onOrdersView}
+        onProfileView={props.onProfileView}
         onRefreshProducts={props.onRefreshProducts}
         session={props.session}
         storeMessage={props.storeMessage}

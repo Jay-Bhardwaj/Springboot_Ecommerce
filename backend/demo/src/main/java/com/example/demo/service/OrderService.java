@@ -19,8 +19,12 @@ import com.example.demo.dto.CheckoutResponse;
 import com.example.demo.entity.CartItem;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.OrderItem;
+import com.example.demo.entity.OrderStatus;
+import com.example.demo.entity.PaymentMethod;
+import com.example.demo.entity.PaymentStatus;
 import com.example.demo.entity.Product;
 import com.example.demo.entity.userEntity;
+import com.example.demo.dto.OrderHistoryResponse;
 import com.example.demo.repository.CartItemRepository;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.ProductRepository;
@@ -77,6 +81,9 @@ public class OrderService {
         order.setDeliveryCharge(cartSummary.getDeliveryCharge());
         order.setTotalAmount(cartSummary.getTotalBill());
         order.setTotalItems(cartSummary.getItemCount());
+        order.setOrderStatus(OrderStatus.PLACED);
+        order.setPaymentMethod(resolvePaymentMethod(request.getPaymentMethod()));
+        order.setPaymentStatus(order.getPaymentMethod() == PaymentMethod.ONLINE ? PaymentStatus.PAID : PaymentStatus.PENDING);
         order.setPlacedAt(placedAt);
         order.setEstimatedDeliveryDate(estimatedDeliveryDate);
 
@@ -132,6 +139,9 @@ public class OrderService {
                 savedOrder.getCity(),
                 savedOrder.getState(),
                 savedOrder.getPostalCode(),
+                deriveOrderStatus(savedOrder).name(),
+                resolvePaymentMethod(savedOrder).name(),
+                resolvePaymentStatus(savedOrder).name(),
                 savedOrder.getTotalItems(),
                 savedOrder.getSubtotal(),
                 savedOrder.getGstRate(),
@@ -141,6 +151,37 @@ public class OrderService {
                 savedOrder.getPlacedAt(),
                 savedOrder.getEstimatedDeliveryDate(),
                 items);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderHistoryResponse> getOrdersForUser(userEntity user) {
+        return orderRepository.findByUserOrderByPlacedAtDesc(user).stream()
+                .map(order -> new OrderHistoryResponse(
+                        order.getId(),
+                        order.getOrderNumber(),
+                        deriveOrderStatus(order).name(),
+                        resolvePaymentMethod(order).name(),
+                        resolvePaymentStatus(order).name(),
+                        order.getTotalItems(),
+                        order.getTotalAmount(),
+                        order.getPlacedAt(),
+                        order.getEstimatedDeliveryDate(),
+                        order.getAddressLine1(),
+                        order.getAddressLine2(),
+                        order.getCity(),
+                        order.getState(),
+                        order.getPostalCode(),
+                        order.getItems().stream()
+                                .map(item -> new CheckoutItemResponse(
+                                        item.getProductId(),
+                                        item.getProductName(),
+                                        item.getCategory(),
+                                        item.getImageUrl(),
+                                        item.getUnitPrice(),
+                                        item.getQuantity(),
+                                        item.getLineTotal()))
+                                .toList()))
+                .toList();
     }
 
     private void validateCheckoutRequest(CheckoutRequest request) {
@@ -173,5 +214,50 @@ public class OrderService {
         String prefix = placedAt.format(DateTimeFormatter.ofPattern("yyyyMMdd", Locale.ENGLISH));
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase(Locale.ENGLISH);
         return "ORD-" + prefix + "-" + suffix;
+    }
+
+    private PaymentMethod resolvePaymentMethod(String paymentMethod) {
+        if (paymentMethod == null || paymentMethod.isBlank()) {
+            return PaymentMethod.COD;
+        }
+
+        try {
+            return PaymentMethod.valueOf(paymentMethod.trim().toUpperCase(Locale.ENGLISH));
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported payment method");
+        }
+    }
+
+    private OrderStatus deriveOrderStatus(Order order) {
+        if (order.getOrderStatus() == OrderStatus.DELIVERED) {
+            return OrderStatus.DELIVERED;
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate estimatedDate = order.getEstimatedDeliveryDate();
+
+        if (!today.isBefore(estimatedDate)) {
+            return OrderStatus.DELIVERED;
+        }
+
+        if (!today.isBefore(estimatedDate.minusDays(1))) {
+            return OrderStatus.IN_TRANSIT;
+        }
+
+        if (!today.isBefore(order.getPlacedAt().toLocalDate().plusDays(1))) {
+            return OrderStatus.SHIPPED;
+        }
+
+        return OrderStatus.PLACED;
+    }
+
+    private PaymentMethod resolvePaymentMethod(Order order) {
+        return order.getPaymentMethod() == null ? PaymentMethod.COD : order.getPaymentMethod();
+    }
+
+    private PaymentStatus resolvePaymentStatus(Order order) {
+        return order.getPaymentStatus() == null
+                ? (resolvePaymentMethod(order) == PaymentMethod.ONLINE ? PaymentStatus.PAID : PaymentStatus.PENDING)
+                : order.getPaymentStatus();
     }
 }

@@ -8,6 +8,8 @@ target/
 *.log
 *.class
 
+# Scripts folder
+scripts/
 # OS
 .DS_Store
 Thumbs.db
@@ -16,3 +18,7 @@ Thumbs.db
 .vscode/
 .idea/
 /.metadata/
+
+# Excel files
+*.xlsx
+*.xls

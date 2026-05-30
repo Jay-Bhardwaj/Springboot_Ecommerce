@@ -9,6 +9,7 @@ public class CheckoutRequest {
     private String city;
     private String state;
     private String postalCode;
+    private String paymentMethod;
 
     public String getCustomerName() {
         return customerName;
@@ -64,5 +65,13 @@ public class CheckoutRequest {
 
     public void setPostalCode(String postalCode) {
         this.postalCode = postalCode;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 }

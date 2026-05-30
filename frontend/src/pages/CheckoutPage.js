@@ -125,10 +125,22 @@ function CheckoutPage({
               <input name="postalCode" onChange={onChange} required type="text" value={checkoutForm.postalCode} />
             </label>
 
+            <label>
+              <span>Payment method</span>
+              <select name="paymentMethod" onChange={onChange} value={checkoutForm.paymentMethod}>
+                <option value="COD">Cash on Delivery</option>
+                <option value="ONLINE">Online Payment</option>
+              </select>
+            </label>
+
             <div className="checkout-estimate">
               <span>Estimated arrival</span>
               <strong>{estimatedArrivalLabel}</strong>
-              <p>Orders are usually processed right away after payment confirmation.</p>
+              <p>
+                {checkoutForm.paymentMethod === "ONLINE"
+                  ? "Online payments are marked paid instantly for this demo checkout."
+                  : "Cash on Delivery will be collected at the time of delivery."}
+              </p>
             </div>
 
             <button className="primary-button checkout-submit" disabled={isPlacingOrder || cartDetails.length === 0} type="submit">

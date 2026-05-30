@@ -50,7 +50,21 @@
   outline: none;
 }
 
+.checkout-form select {
+  width: 100%;
+  border: 1px solid rgba(23, 23, 23, 0.1);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.92);
+  outline: none;
+}
+
 .checkout-form input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+}
+
+.checkout-form select:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
 }

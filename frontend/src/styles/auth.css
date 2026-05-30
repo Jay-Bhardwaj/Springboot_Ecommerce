@@ -130,6 +130,48 @@
   gap: 16px;
 }
 
+.auth-aux {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.auth-inline-link {
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.password-reset-card {
+  display: grid;
+  gap: 16px;
+}
+
+.password-reset-card label {
+  display: grid;
+  gap: 8px;
+}
+
+.password-reset-card span {
+  font-weight: 600;
+}
+
+.password-reset-card input {
+  width: 100%;
+  border: 1px solid rgba(23, 23, 23, 0.1);
+  border-radius: 18px;
+  padding: 15px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  outline: none;
+}
+
+.password-reset-card input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+}
+
 .auth-form label {
   display: grid;
   gap: 8px;

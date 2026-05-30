@@ -12,6 +12,9 @@ function CartSummary({
   subtotal,
   totalBill,
 }) {
+  const amountLeftForFreeDelivery = Math.max(freeDeliveryThreshold - subtotal, 0);
+  const progressToFreeDelivery = Math.min((subtotal / freeDeliveryThreshold) * 100, 100);
+
   return (
     <article className="panel cart-summary-panel">
       <div className="section-title">
@@ -25,6 +28,20 @@ function CartSummary({
         <p className="empty-state">Your cart is empty. Open a product to add it here.</p>
       ) : (
         <>
+          <div className="cart-progress-card">
+            <div className="cart-progress-copy">
+              <strong>{deliveryCharge === 0 ? "Free delivery unlocked" : `Add Rs. ${amountLeftForFreeDelivery.toFixed(2)} more`}</strong>
+              <p>
+                {deliveryCharge === 0
+                  ? "Nice. Your order already qualifies for free delivery."
+                  : `Reach Rs. ${freeDeliveryThreshold} to remove the delivery fee.`}
+              </p>
+            </div>
+            <div aria-hidden="true" className="cart-progress-track">
+              <span style={{ width: `${progressToFreeDelivery}%` }} />
+            </div>
+          </div>
+
           <div className="cart-list">
             {cartDetails.map((item) => (
               <article className="cart-item" key={item.productId}>

@@ -3,7 +3,9 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthPage from "./AuthPage";
 import CheckoutPage from "./CheckoutPage";
+import CustomerProfilePage from "./CustomerProfilePage";
 import DashboardPage from "./DashboardPage";
+import MyOrdersPage from "./MyOrdersPage";
 
 const API_BASE_URL = "http://localhost:8080";
 const EMPTY_USER_FORM = { name: "", email: "", password: "" };
@@ -29,6 +31,11 @@ const EMPTY_CHECKOUT_FORM = {
   city: "",
   state: "",
   postalCode: "",
+  paymentMethod: "COD",
+};
+const EMPTY_PASSWORD_RESET_FORM = {
+  email: "",
+  newPassword: "",
 };
 const GST_RATE = 0.18;
 const DELIVERY_CHARGE = 40;
@@ -43,14 +50,21 @@ function AppShell() {
   const [products, setProducts] = useState([]);
   const [customerFilters, setCustomerFilters] = useState(EMPTY_CUSTOMER_FILTERS);
   const [checkoutForm, setCheckoutForm] = useState(EMPTY_CHECKOUT_FORM);
+  const [passwordResetForm, setPasswordResetForm] = useState(EMPTY_PASSWORD_RESET_FORM);
   const [cartItems, setCartItems] = useState([]);
+  const [orderHistory, setOrderHistory] = useState([]);
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [editingProductId, setEditingProductId] = useState(null);
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [placedOrder, setPlacedOrder] = useState(null);
+  const [profileSection, setProfileSection] = useState("about");
+  const [savedAddress, setSavedAddress] = useState(EMPTY_CHECKOUT_FORM);
   const [storeMessage, setStoreMessage] = useState("Sign in to open your ecommerce workspace.");
 
   const fetchDashboardGreeting = async (token) => {
@@ -92,6 +106,31 @@ function AppShell() {
       toast.error("Could not load products.");
     } finally {
       setIsLoadingProducts(false);
+    }
+  };
+
+  const fetchOrderHistory = async (token = session.token) => {
+    if (!token) {
+      return;
+    }
+
+    setIsLoadingOrders(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/my`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to load orders");
+      }
+
+      const data = await response.json();
+      setOrderHistory(data);
+    } catch (error) {
+      toast.error("Could not load your orders.");
+    } finally {
+      setIsLoadingOrders(false);
     }
   };
 
@@ -213,8 +252,12 @@ function AppShell() {
   const handleRemoveCartItem = async (productId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/cart/items/${productId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${session.token}` },
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.token}`,
+        },
+        body: JSON.stringify({ quantity: 0 }),
       });
 
       if (!response.ok) {
@@ -246,6 +289,10 @@ function AppShell() {
 
     const restoredSession = { token, role, name: name || "", email: email || "" };
     setSession(restoredSession);
+    const storedAddress = localStorage.getItem("savedCheckoutAddress");
+    if (storedAddress) {
+      setSavedAddress(JSON.parse(storedAddress));
+    }
     setStoreMessage(role === "ADMIN" ? "Admin workspace restored. Manage your products below." : "Customer session restored. Explore your catalog below.");
 
     const restoreWorkspace = async () => {
@@ -311,11 +358,13 @@ function AppShell() {
     setSession({ token: "", name: "", email: "", role: "" });
     setProducts([]);
     setCartItems([]);
+    setOrderHistory([]);
     setSelectedProductId(null);
     setEditingProductId(null);
     setCustomerView("dashboard");
     setCheckoutForm(EMPTY_CHECKOUT_FORM);
     setPlacedOrder(null);
+    setSavedAddress(EMPTY_CHECKOUT_FORM);
     setProductForm(EMPTY_PRODUCT_FORM);
     setStoreMessage("Sign in to open your ecommerce workspace.");
   };
@@ -323,6 +372,11 @@ function AppShell() {
   const handleUserInputChange = (event) => {
     const { name, value } = event.target;
     setUserForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handlePasswordResetInputChange = (event) => {
+    const { name, value } = event.target;
+    setPasswordResetForm((current) => ({ ...current, [name]: value }));
   };
 
   const handleProductInputChange = (event) => {
@@ -372,9 +426,20 @@ function AppShell() {
     setCustomerView("dashboard");
   };
 
+  const openProfilePage = (section = "about") => {
+    setProfileSection(section);
+    setCustomerView("profile");
+  };
+
+  const openOrdersPage = async () => {
+    setCustomerView("orders");
+    await fetchOrderHistory();
+  };
+
   const switchAuthView = (nextView) => {
     setAuthView(nextView);
     setUserForm((current) => ({ ...EMPTY_USER_FORM, email: current.email }));
+    setPasswordResetForm((current) => ({ ...EMPTY_PASSWORD_RESET_FORM, email: current.email }));
   };
 
   const handleRegister = async (event) => {
@@ -432,6 +497,10 @@ function AppShell() {
       setCheckoutForm((current) => ({ ...current, customerName: payload.name || "" }));
       setPlacedOrder(null);
       setCustomerView("dashboard");
+      const storedAddress = localStorage.getItem("savedCheckoutAddress");
+      if (storedAddress) {
+        setSavedAddress(JSON.parse(storedAddress));
+      }
       await fetchProducts(payload.token);
       await fetchDashboardGreeting(payload.token);
       // ✅ FETCH CART AFTER LOGIN
@@ -539,6 +608,76 @@ function AppShell() {
     toast.info("Logged out.");
   };
 
+  const handleResetPassword = async (event) => {
+    event.preventDefault();
+    setIsResettingPassword(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/user/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(passwordResetForm),
+      });
+
+      const message = await response.text();
+      if (!response.ok || !message.toLowerCase().includes("success")) {
+        throw new Error(message || "Password reset failed");
+      }
+
+      toast.success("Password reset successful. Please login.");
+      setPasswordResetForm(EMPTY_PASSWORD_RESET_FORM);
+      setAuthView("customer-login");
+    } catch (error) {
+      toast.error(error.message || "Password reset failed.");
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  const handleUpdateProfile = async (profilePayload) => {
+    setIsUpdatingProfile(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/user/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.token}`,
+        },
+        body: JSON.stringify(profilePayload),
+      });
+
+      const contentType = response.headers.get("content-type") || "";
+      const payload = contentType.includes("application/json")
+        ? await response.json()
+        : { message: await response.text() };
+
+      if (!response.ok) {
+        throw new Error(payload.message || "Could not update profile");
+      }
+
+      const nextSession = {
+        token: payload.token || session.token,
+        name: payload.name || "",
+        email: payload.email || session.email,
+        role: payload.role || session.role,
+      };
+
+      setSession(nextSession);
+      localStorage.setItem("token", nextSession.token);
+      localStorage.setItem("userName", nextSession.name);
+      localStorage.setItem("userEmail", nextSession.email);
+      localStorage.setItem("userRole", nextSession.role);
+      toast.success("Profile updated successfully.");
+      return payload;
+    } catch (error) {
+      toast.error(error.message || "Could not update profile.");
+      throw error;
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
   const handlePlaceOrder = async (event) => {
     event.preventDefault();
 
@@ -570,7 +709,20 @@ function AppShell() {
 
       setPlacedOrder(payload);
       setCartItems([]);
+      setOrderHistory((current) => [payload, ...current]);
       setSelectedProductId(null);
+      const nextSavedAddress = {
+        customerName: payload.customerName,
+        phoneNumber: payload.phoneNumber,
+        addressLine1: payload.addressLine1,
+        addressLine2: payload.addressLine2 || "",
+        city: payload.city,
+        state: payload.state,
+        postalCode: payload.postalCode,
+        paymentMethod: payload.paymentMethod,
+      };
+      setSavedAddress(nextSavedAddress);
+      localStorage.setItem("savedCheckoutAddress", JSON.stringify(nextSavedAddress));
       await fetchProducts();
       toast.success("Order placed successfully.");
     } catch (error) {
@@ -671,6 +823,21 @@ function AppShell() {
             subtotal={subtotal}
             totalBill={totalBill}
           />
+        ) : !isAdmin && customerView === "orders" ? (
+          <MyOrdersPage
+            isLoadingOrders={isLoadingOrders}
+            onBack={returnToDashboard}
+            orders={orderHistory}
+          />
+        ) : !isAdmin && customerView === "profile" ? (
+          <CustomerProfilePage
+            isUpdatingProfile={isUpdatingProfile}
+            onBack={returnToDashboard}
+            onUpdateProfile={handleUpdateProfile}
+            profileSection={profileSection}
+            savedAddress={savedAddress}
+            session={session}
+          />
         ) : (
           <DashboardPage
             editingProductId={editingProductId}
@@ -679,7 +846,10 @@ function AppShell() {
             isSavingProduct={isSavingProduct}
             onDeleteProduct={handleDeleteProduct}
             onEditProduct={handleEditProduct}
+            onAddressView={() => openProfilePage("address")}
             onLogout={handleLogout}
+            onOrdersView={openOrdersPage}
+            onProfileView={() => openProfilePage("about")}
             onProceedToCheckout={openCheckoutPage}
             onProductInputChange={handleProductInputChange}
             onRefreshProducts={fetchProducts}
@@ -714,12 +884,16 @@ function AppShell() {
       ) : (
         <AuthPage
           authView={authView}
+          isResettingPassword={isResettingPassword}
           isSubmittingAuth={isSubmittingAuth}
           onAdminLogin={handleAdminLogin}
           onChange={handleUserInputChange}
           onCustomerLogin={handleCustomerLogin}
+          onPasswordResetChange={handlePasswordResetInputChange}
+          onResetPassword={handleResetPassword}
           onRegister={handleRegister}
           onSwitchView={switchAuthView}
+          passwordResetForm={passwordResetForm}
           storeMessage={storeMessage}
           userForm={userForm}
         />

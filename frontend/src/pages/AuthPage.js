@@ -4,7 +4,21 @@ import AuthForm from "../components/AuthForm";
 import FeatureHighlights from "../components/FeatureHighlights";
 import "../styles/auth.css";
 
-function AuthPage({ authView, isSubmittingAuth, onAdminLogin, onChange, onCustomerLogin, onRegister, onSwitchView, storeMessage, userForm }) {
+function AuthPage({
+  authView,
+  isResettingPassword,
+  isSubmittingAuth,
+  onAdminLogin,
+  onChange,
+  onCustomerLogin,
+  onPasswordResetChange,
+  onRegister,
+  onResetPassword,
+  onSwitchView,
+  passwordResetForm,
+  storeMessage,
+  userForm,
+}) {
   const config = {
     "admin-login": {
       title: "Admin access",
@@ -29,6 +43,10 @@ function AuthPage({ authView, isSubmittingAuth, onAdminLogin, onChange, onCustom
       helper: "Registration creates a CUSTOMER account automatically.",
       onSubmit: onRegister,
       showName: true,
+    },
+    "password-reset": {
+      title: "Reset your password",
+      subtitle: "Enter your customer email and a new password to regain access quickly in this demo app.",
     },
   }[authView];
 
@@ -61,15 +79,57 @@ function AuthPage({ authView, isSubmittingAuth, onAdminLogin, onChange, onCustom
             <p>{config.subtitle}</p>
           </div>
 
-          <AuthForm
-            helper={config.helper}
-            isSubmitting={isSubmittingAuth}
-            onChange={onChange}
-            onSubmit={config.onSubmit}
-            showName={config.showName}
-            submitLabel={config.submitLabel}
-            userForm={userForm}
-          />
+          {authView === "password-reset" ? (
+            <form className="password-reset-card" onSubmit={onResetPassword}>
+              <label>
+                <span>Email Address</span>
+                <input
+                  name="email"
+                  onChange={onPasswordResetChange}
+                  placeholder="you@gmail.com"
+                  required
+                  type="email"
+                  value={passwordResetForm.email}
+                />
+              </label>
+
+              <label>
+                <span>New Password</span>
+                <input
+                  name="newPassword"
+                  onChange={onPasswordResetChange}
+                  placeholder="Enter your new password"
+                  required
+                  type="password"
+                  value={passwordResetForm.newPassword}
+                />
+              </label>
+
+              <button className="primary-button submit-button" disabled={isResettingPassword} type="submit">
+                {isResettingPassword ? "Resetting..." : "Reset Password"}
+              </button>
+            </form>
+          ) : (
+            <>
+              <AuthForm
+                helper={config.helper}
+                isSubmitting={isSubmittingAuth}
+                onChange={onChange}
+                onSubmit={config.onSubmit}
+                showName={config.showName}
+                submitLabel={config.submitLabel}
+                userForm={userForm}
+              />
+
+              {authView === "customer-login" ? (
+                <div className="auth-aux">
+                  <button className="auth-inline-link" onClick={() => onSwitchView("password-reset")} type="button">
+                    Forgot password?
+                  </button>
+                </div>
+              ) : null}
+            </>
+          )}
         </div>
       </section>
     </main>

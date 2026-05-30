@@ -16,6 +16,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 
 @Entity
@@ -74,6 +76,18 @@ public class Order {
 
     @Column(nullable = false)
     private Integer totalItems;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private OrderStatus orderStatus;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private PaymentMethod paymentMethod;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private PaymentStatus paymentStatus;
 
     @Column(nullable = false)
     private LocalDateTime placedAt;
@@ -231,6 +245,30 @@ public class Order {
 
     public void setPlacedAt(LocalDateTime placedAt) {
         this.placedAt = placedAt;
+    }
+
+    public OrderStatus getOrderStatus() {
+        return orderStatus;
+    }
+
+    public void setOrderStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
     }
 
     public LocalDate getEstimatedDeliveryDate() {
