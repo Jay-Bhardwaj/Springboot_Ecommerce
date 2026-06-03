@@ -19,6 +19,4 @@ Thumbs.db
 .idea/
 /.metadata/
 
-# Excel files
-*.xlsx
-*.xls
+
