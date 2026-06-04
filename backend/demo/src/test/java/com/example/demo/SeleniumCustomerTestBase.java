@@ -12,6 +12,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -24,6 +25,8 @@ abstract class SeleniumCustomerTestBase {
     protected static final String FRONTEND_URL = System.getProperty("frontend.url", "http://localhost:3000");
     protected static final String BACKEND_URL = System.getProperty("backend.url", "http://localhost:8080");
     protected static final String CUSTOMER_PASSWORD = "Test@123";
+    protected static final long STEP_WAIT_MS = Long.getLong("selenium.step.wait.ms", 1000L);
+    protected static final long CLOSE_WAIT_MS = Long.getLong("selenium.close.wait.ms", 3000L);
 
     protected WebDriver driver;
     protected WebDriverWait wait;
@@ -39,6 +42,8 @@ abstract class SeleniumCustomerTestBase {
 
     @AfterEach
     void closeBrowser() {
+        pauseForDemo(CLOSE_WAIT_MS);
+
         if (driver != null) {
             driver.quit();
         }
@@ -55,16 +60,19 @@ abstract class SeleniumCustomerTestBase {
     protected void openApp() {
         driver.get(FRONTEND_URL);
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("main")));
+        pauseForDemo();
     }
 
     protected void openCustomerRegister() {
         clickButton("Customer Register");
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//h2[normalize-space()='Create customer account']")));
+        pauseForDemo();
     }
 
     protected void openCustomerLogin() {
         clickButton("Customer Login");
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//h2[normalize-space()='Customer sign in']")));
+        pauseForDemo();
     }
 
     protected void registerCustomerFromUi(TestCustomer customer) {
@@ -84,6 +92,7 @@ abstract class SeleniumCustomerTestBase {
         wait.until(ExpectedConditions.or(
                 ExpectedConditions.textToBePresentInElementLocated(By.tagName("body"), "Logged in as CUSTOMER"),
                 ExpectedConditions.textToBePresentInElementLocated(By.tagName("body"), "Recommended products")));
+        pauseForDemo();
     }
 
     protected void createCustomerByApi(TestCustomer customer) {
@@ -121,13 +130,51 @@ abstract class SeleniumCustomerTestBase {
     protected void clickButton(String text) {
         By locator = By.xpath("//button[normalize-space()='" + text + "']");
         wait.until(ExpectedConditions.elementToBeClickable(locator)).click();
+        pauseForDemo();
     }
 
     protected void typeByLabel(String labelText, String value) {
-        By locator = By.xpath("//label[.//span[normalize-space()='" + labelText + "']]//input");
-        WebElement input = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+        WebElement input = inputByLabel(labelText);
         input.clear();
         input.sendKeys(value);
+        pauseForDemo();
+    }
+
+    protected WebElement inputByLabel(String labelText) {
+        By locator = By.xpath("//label[.//span[normalize-space()='" + labelText + "']]//input");
+        return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+    }
+
+    protected WebElement toastMessage() {
+        return wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".Toastify__toast")));
+    }
+
+    protected void assertToastContains(String expectedText) {
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(By.cssSelector(".Toastify__toast"), expectedText));
+        pauseForDemo();
+    }
+
+    protected boolean isInputValid(String labelText) {
+        return (Boolean) ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].checkValidity();", inputByLabel(labelText));
+    }
+
+    protected String validationMessageFor(String labelText) {
+        return (String) ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].validationMessage;", inputByLabel(labelText));
+    }
+
+    protected void pauseForDemo() {
+        pauseForDemo(STEP_WAIT_MS);
+    }
+
+    protected void pauseForDemo(long milliseconds) {
+        try {
+            Thread.sleep(milliseconds);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            fail("Test wait was interrupted.");
+        }
     }
 
     protected record TestCustomer(String name, String email, String password) {

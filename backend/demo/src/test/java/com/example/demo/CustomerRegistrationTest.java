@@ -7,12 +7,15 @@ class CustomerRegistrationTest extends SeleniumCustomerTestBase {
     @Test
     void customerCanRegisterWithValidInputsAndThenLogin() {
 //        TestCustomer customer = newCustomer("Registration");
-    	
-    	TestCustomer customer = new TestCustomer(
-    	        "Your Name",
-    	        "yourgmail@gmail.com",
-    	        "Your@123"
-    	);
+
+         
+         
+          TestCustomer customer = new TestCustomer(
+                  "Your Name",
+                  "yourgmail@gmail.com",
+                  "Your@123"
+          );
+         
 
         openApp();
         openCustomerRegister();
