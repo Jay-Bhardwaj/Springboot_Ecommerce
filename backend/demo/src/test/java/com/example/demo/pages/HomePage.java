@@ -25,7 +25,7 @@ public class HomePage extends BasePage {
      */
     public RegisterPage clickCustomerRegister() {
         clickButton("Customer Register");
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//h2[normalize-space()='Create customer account']"));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//h2[normalize-space()='Create customer account']")));
         pauseForDemo();
         return new RegisterPage(driver);
     }
@@ -35,7 +35,7 @@ public class HomePage extends BasePage {
      */
     public LoginPage clickCustomerLogin() {
         clickButton("Customer Login");
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//h2[normalize-space()='Customer sign in']"));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//h2[normalize-space()='Customer sign in']")));
         pauseForDemo();
         return new LoginPage(driver);
     }

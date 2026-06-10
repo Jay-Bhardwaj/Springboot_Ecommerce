@@ -21,6 +21,13 @@ public class RegisterPage extends BasePage {
     }
 
     /**
+     * Type text into an input field by its label (exposed for tests)
+     */
+    public void typeByLabel(String labelText, String value) {
+        super.typeByLabel(labelText, value);
+    }
+
+    /**
      * Check if email input is valid
      */
     public boolean isEmailInputValid() {
