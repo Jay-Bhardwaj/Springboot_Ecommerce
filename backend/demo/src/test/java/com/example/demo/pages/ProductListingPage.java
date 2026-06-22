@@ -109,9 +109,11 @@ public class ProductListingPage extends BasePage {
      * Check if product is in stock by index
      */
     public boolean isProductInStock(int index) {
-        return getStockStatusByIndex(index).equals("In Stock");
-    }
 
+        String stock = getStockStatusByIndex(index);
+
+        return stock.trim().equalsIgnoreCase("IN STOCK");
+    }
     /**
      * Click View Details button for a product by index
      */

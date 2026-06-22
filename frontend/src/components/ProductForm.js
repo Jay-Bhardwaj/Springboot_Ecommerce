@@ -1,5 +1,4 @@
 import React from "react";
-
 function ProductForm({ editingProductId, isSavingProduct, onChange, onReset, onSubmit, productForm }) {
   return (
     <article className="panel product-form-panel">

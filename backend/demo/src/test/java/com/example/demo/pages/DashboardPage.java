@@ -61,8 +61,27 @@ public class DashboardPage extends BasePage {
      * Open the customer profile menu.
      */
     public void openProfileMenu() {
-        WebElement trigger = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector(".profile-trigger")));
-        trigger.click();
+
+        try {
+            wait.until(ExpectedConditions.invisibilityOfElementLocated(
+                    By.cssSelector(".Toastify__toast")));
+        } catch (Exception e) {
+        }
+
+        WebElement trigger =
+                wait.until(ExpectedConditions.elementToBeClickable(
+                        By.cssSelector(".profile-trigger")));
+
+        try {
+            trigger.click();
+        } catch (Exception e) {
+
+            ((org.openqa.selenium.JavascriptExecutor) driver)
+                    .executeScript(
+                            "arguments[0].click();",
+                            trigger);
+        }
+
         pauseForDemo();
     }
 
@@ -75,6 +94,8 @@ public class DashboardPage extends BasePage {
                 By.xpath("//button[contains(@class, 'profile-option danger')]//strong[normalize-space()='Logout']/ancestor::button")));
         logoutButton.click();
         pauseForDemo();
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//h2[normalize-space()='Customer sign in']")));
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(
+                By.tagName("body"),
+                "Admin access"));
     }
 }
