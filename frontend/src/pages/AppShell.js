@@ -575,7 +575,7 @@ function AppShell() {
 
       toast.success(editingProductId ? "Product updated." : "Product created.");
       resetProductForm();
-      fetchProducts();
+      await fetchProducts();
     } catch (error) {
       toast.error(error.message || "Product save failed.");
     } finally {
@@ -603,7 +603,7 @@ function AppShell() {
       if (editingProductId === productId) {
         resetProductForm();
       }
-      fetchProducts();
+      await fetchProducts();
     } catch (error) {
       toast.error(error.message || "Could not delete product.");
     }

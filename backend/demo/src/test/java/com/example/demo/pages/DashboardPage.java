@@ -2,6 +2,7 @@ package com.example.demo.pages;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
 public class DashboardPage extends BasePage {
@@ -54,5 +55,26 @@ public class DashboardPage extends BasePage {
     public void assertToastContains(String expectedText) {
         wait.until(ExpectedConditions.textToBePresentInElementLocated(By.cssSelector(".Toastify__toast"), expectedText));
         pauseForDemo();
+    }
+
+    /**
+     * Open the customer profile menu.
+     */
+    public void openProfileMenu() {
+        WebElement trigger = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector(".profile-trigger")));
+        trigger.click();
+        pauseForDemo();
+    }
+
+    /**
+     * Log out from the customer dashboard.
+     */
+    public void logout() {
+        openProfileMenu();
+        WebElement logoutButton = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//button[contains(@class, 'profile-option danger')]//strong[normalize-space()='Logout']/ancestor::button")));
+        logoutButton.click();
+        pauseForDemo();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//h2[normalize-space()='Customer sign in']")));
     }
 }

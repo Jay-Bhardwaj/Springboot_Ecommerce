@@ -181,7 +181,7 @@ class ProductVisibilityTest extends BaseTest {
             String stockStatus = productListingPage.getStockStatusByIndex(i);
             
             if (isInStock) {
-                assertEquals("IN STOCK", stockStatus, "Stock badge should say 'In Stock'");
+                assertEquals("In Stock", stockStatus, "Stock badge should say 'In Stock'");
             } else {
                 assertEquals("Sold Out", stockStatus, "Stock badge should say 'Sold Out'");
             }

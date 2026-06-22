@@ -9,6 +9,7 @@ target/
 *.class
 
 # Scripts folder
+.agents/
 scripts/
 # OS
 .DS_Store

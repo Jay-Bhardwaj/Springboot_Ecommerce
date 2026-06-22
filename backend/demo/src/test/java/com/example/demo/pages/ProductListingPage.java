@@ -4,10 +4,18 @@ import java.util.List;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
 public class ProductListingPage extends BasePage {
     private static final String FRONTEND_URL = System.getProperty("frontend.url", "http://localhost:3000");
+    private static final By PRODUCT_CARD_LOCATOR = By.cssSelector("article.catalog-card");
+    private static final By EMPTY_STATE_LOCATOR = By.cssSelector("p.empty-state");
+    private static final By RESULTS_LOCATOR = By.xpath("//span[contains(normalize-space(.), 'results')]");
+    private static final By CART_LOCATOR = By.xpath("//span[contains(normalize-space(.), 'in cart')]");
+    private static final By SEARCH_INPUT_LOCATOR = By.name("search");
+    private static final By CATEGORY_SELECT_LOCATOR = By.name("category");
+    private static final By CLEAR_FILTERS_BUTTON_LOCATOR = By.xpath("//button[normalize-space()='Clear Filters']");
 
     public ProductListingPage(WebDriver driver) {
         super(driver);
@@ -23,10 +31,23 @@ public class ProductListingPage extends BasePage {
     }
 
     /**
+     * Wait until the catalog has finished loading.
+     */
+    private void waitForCatalogReady() {
+        wait.until(driver -> {
+            if (!driver.findElements(PRODUCT_CARD_LOCATOR).isEmpty()) {
+                return true;
+            }
+            return !driver.findElements(EMPTY_STATE_LOCATOR).isEmpty();
+        });
+    }
+
+    /**
      * Get all product cards currently visible on the page
      */
     public List<WebElement> getAllProductCards() {
-        return driver.findElements(By.xpath("//article[@class='catalog-card']"));
+        waitForCatalogReady();
+        return driver.findElements(PRODUCT_CARD_LOCATOR);
     }
 
     /**
@@ -100,6 +121,7 @@ public class ProductListingPage extends BasePage {
             throw new IllegalArgumentException("Product index " + index + " not found.");
         }
         products.get(index).findElement(By.xpath(".//button[contains(@class, 'catalog-action')]")).click();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@class='product-info-section']//h1")));
         pauseForDemo();
         return new ProductDetailPage(driver);
     }
@@ -124,9 +146,18 @@ public class ProductListingPage extends BasePage {
      * Search for a product by keyword
      */
     public void searchProduct(String keyword) {
-        WebElement searchInput = driver.findElement(By.xpath("//input[@placeholder='Search by product name or category']"));
+        WebElement searchInput = wait.until(ExpectedConditions.visibilityOfElementLocated(SEARCH_INPUT_LOCATOR));
         searchInput.clear();
         searchInput.sendKeys(keyword);
+        String normalizedKeyword = keyword.trim().toLowerCase();
+        wait.until(driver -> {
+            List<WebElement> products = driver.findElements(PRODUCT_CARD_LOCATOR);
+            if (products.isEmpty()) {
+                return !driver.findElements(EMPTY_STATE_LOCATOR).isEmpty();
+            }
+            return products.stream()
+                    .allMatch(product -> product.getText().toLowerCase().contains(normalizedKeyword));
+        });
         pauseForDemo();
     }
 
@@ -134,27 +165,58 @@ public class ProductListingPage extends BasePage {
      * Filter products by category
      */
     public void filterByCategory(String categoryName) {
-        WebElement categoryFilter = driver.findElement(
-                By.xpath("//label[contains(text(), '" + categoryName + "')]//input"));
-        categoryFilter.click();
-        wait.until(ExpectedConditions.stalenessOf(getAllProductCards().get(0)));
+        WebElement categorySelect = wait.until(ExpectedConditions.visibilityOfElementLocated(CATEGORY_SELECT_LOCATOR));
+        Select select = new Select(categorySelect);
+        String normalizedCategory = categoryName.trim().toLowerCase();
+        for (WebElement option : select.getOptions()) {
+            String optionText = option.getText().trim();
+            if (optionText.toLowerCase().equals(normalizedCategory)) {
+                select.selectByVisibleText(optionText);
+                break;
+            }
+        }
+        if (!select.getFirstSelectedOption().getText().trim().equalsIgnoreCase(categoryName.trim())) {
+            throw new IllegalArgumentException("Category not found in filter options: " + categoryName);
+        }
+        wait.until(driver -> {
+            List<WebElement> products = driver.findElements(PRODUCT_CARD_LOCATOR);
+            if (products.isEmpty()) {
+                return !driver.findElements(EMPTY_STATE_LOCATOR).isEmpty();
+            }
+            return products.stream()
+                    .allMatch(product -> product.getText().toLowerCase().contains(normalizedCategory));
+        });
         pauseForDemo();
+    }
+
+    /**
+     * Clear all active customer filters
+     */
+    public void clearCustomerFilters() {
+        List<WebElement> buttons = driver.findElements(CLEAR_FILTERS_BUTTON_LOCATOR);
+        if (!buttons.isEmpty() && buttons.get(0).isEnabled()) {
+            buttons.get(0).click();
+            wait.until(driver -> !driver.findElements(PRODUCT_CARD_LOCATOR).isEmpty());
+            pauseForDemo();
+        }
     }
 
     /**
      * Get "Results" count from toolbar
      */
     public int getResultsCount() {
-        String text = driver.findElement(By.xpath("//span[contains(text(), 'results')]")).getText();
-        return Integer.parseInt(text.split(" ")[0]);
+        wait.until(ExpectedConditions.visibilityOfElementLocated(RESULTS_LOCATOR));
+        String text = driver.findElement(RESULTS_LOCATOR).getText();
+        return Integer.parseInt(text.replaceAll("[^0-9]", ""));
     }
 
     /**
      * Get cart count from toolbar
      */
     public int getCartCount() {
-        String text = driver.findElement(By.xpath("//span[contains(text(), 'in cart')]")).getText();
-        return Integer.parseInt(text.split(" ")[0]);
+        wait.until(ExpectedConditions.visibilityOfElementLocated(CART_LOCATOR));
+        String text = driver.findElement(CART_LOCATOR).getText();
+        return Integer.parseInt(text.replaceAll("[^0-9]", ""));
     }
 
     /**
