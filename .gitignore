@@ -9,6 +9,7 @@ target/
 *.class
 
 # Scripts folder
+.tmp/
 .agents/
 scripts/
 # OS

@@ -7,6 +7,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.time.Duration;
 
 import org.junit.jupiter.api.AfterEach;
@@ -18,6 +20,12 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import com.example.demo.utils.TestCustomer;
 
 public class BaseTest {
+
+    protected record AuthSession(String token, String name, String email, String role) {
+    }
+
+    protected record SeededProduct(long id, String name) {
+    }
 
     protected static final String FRONTEND_URL =
             System.getProperty("frontend.url", "http://localhost:3000");
@@ -32,6 +40,17 @@ public class BaseTest {
 
     protected static final long DEMO_WAIT_MS =
             Long.getLong("selenium.step.wait.ms", 500L);
+
+    private static final Pattern JSON_TOKEN_PATTERN =
+            Pattern.compile("\"token\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern JSON_NAME_PATTERN =
+            Pattern.compile("\"name\"\\s*:\\s*\"([^\"]*)\"");
+    private static final Pattern JSON_EMAIL_PATTERN =
+            Pattern.compile("\"email\"\\s*:\\s*\"([^\"]*)\"");
+    private static final Pattern JSON_ROLE_PATTERN =
+            Pattern.compile("\"role\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern JSON_ID_PATTERN =
+            Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
 
     protected WebDriver driver;
 
@@ -126,9 +145,9 @@ public class BaseTest {
                   "password": "%s"
                 }
                 """.formatted(
-                        customer.name(),
-                        customer.email(),
-                        customer.password());
+                        escapeJson(customer.name()),
+                        escapeJson(customer.email()),
+                        escapeJson(customer.password()));
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(
@@ -173,6 +192,148 @@ public class BaseTest {
             fail(
                     "Customer API setup was interrupted.");
         }
+    }
+
+    /**
+     * Login a user through the API and return the session payload.
+     */
+    protected AuthSession loginByApi(String email, String password) {
+
+        String requestBody = """
+                {
+                  "email": "%s",
+                  "password": "%s"
+                }
+                """.formatted(
+                        escapeJson(email),
+                        escapeJson(password));
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BACKEND_URL + "/user/login"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+
+        try {
+            HttpResponse<String> response = HttpClient.newHttpClient()
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 400) {
+                fail("Could not login through API. Status: " + response.statusCode() + ", body: " + response.body());
+            }
+
+            return new AuthSession(
+                    extractJsonValue(JSON_TOKEN_PATTERN, response.body()),
+                    extractJsonValue(JSON_NAME_PATTERN, response.body()),
+                    extractJsonValue(JSON_EMAIL_PATTERN, response.body()),
+                    extractJsonValue(JSON_ROLE_PATTERN, response.body()));
+        } catch (IOException exception) {
+            fail("Could not connect to backend at " + BACKEND_URL + ": " + exception.getMessage());
+            return null;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            fail("API login was interrupted.");
+            return null;
+        }
+    }
+
+    /**
+     * Create a product through the API using an authenticated admin session.
+     */
+    protected SeededProduct createProductByApi(
+            AuthSession session,
+            String name,
+            String category,
+            String price,
+            String stockQuantity,
+            String imageUrl,
+            String description) {
+
+        String requestBody = """
+                {
+                  "name": "%s",
+                  "description": "%s",
+                  "price": %s,
+                  "category": "%s",
+                  "imageUrl": "%s",
+                  "stockQuantity": %s
+                }
+                """.formatted(
+                        escapeJson(name),
+                        escapeJson(description),
+                        price,
+                        escapeJson(category),
+                        escapeJson(imageUrl),
+                        stockQuantity);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BACKEND_URL + "/products"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + session.token())
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+
+        try {
+            HttpResponse<String> response = HttpClient.newHttpClient()
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 400) {
+                fail("Could not create product through API. Status: " + response.statusCode() + ", body: " + response.body());
+            }
+
+            return new SeededProduct(
+                    Long.parseLong(extractJsonValue(JSON_ID_PATTERN, response.body())),
+                    name);
+        } catch (IOException exception) {
+            fail("Could not connect to backend at " + BACKEND_URL + ": " + exception.getMessage());
+            return null;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            fail("Product API setup was interrupted.");
+            return null;
+        }
+    }
+
+    /**
+     * Delete a product through the API using an authenticated admin session.
+     */
+    protected void deleteProductByApi(AuthSession session, long productId) {
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BACKEND_URL + "/products/" + productId))
+                .timeout(Duration.ofSeconds(20))
+                .header("Authorization", "Bearer " + session.token())
+                .DELETE()
+                .build();
+
+        try {
+            HttpResponse<String> response = HttpClient.newHttpClient()
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 400) {
+                fail("Could not delete product through API. Status: " + response.statusCode() + ", body: " + response.body());
+            }
+        } catch (IOException exception) {
+            fail("Could not connect to backend at " + BACKEND_URL + ": " + exception.getMessage());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            fail("Product API cleanup was interrupted.");
+        }
+    }
+
+    protected String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    protected String extractJsonValue(Pattern pattern, String body) {
+        Matcher matcher = pattern.matcher(body);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        fail("Could not extract expected JSON value from response: " + body);
+        return "";
     }
 
     /**

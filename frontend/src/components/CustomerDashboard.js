@@ -53,6 +53,7 @@ function CustomerDashboard({
         <ProductDetailPage
           onAddToCart={onAddToCart}
           onBack={onCloseProductDetails}
+          onBuyNow={onProceedToCheckout}
           product={selectedProduct}
         />
       </section>

@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { toast } from "react-toastify";
 import "../styles/checkout.css";
 
 function CheckoutPage({
@@ -18,6 +19,73 @@ function CheckoutPage({
   subtotal,
   totalBill,
 }) {
+  const [isLaunchingPayment, setIsLaunchingPayment] = useState(false);
+  const razorpayKeyId = process.env.REACT_APP_RAZORPAY_KEY_ID || "";
+
+  const placeOrderAfterPayment = async () => {
+    try {
+      await onPlaceOrder({ preventDefault: () => {} });
+    } finally {
+      setIsLaunchingPayment(false);
+    }
+  };
+
+  const openRazorpayCheckout = async (event) => {
+    event.preventDefault();
+
+    if (checkoutForm.paymentMethod !== "ONLINE") {
+      await onPlaceOrder(event);
+      return;
+    }
+
+    if (!razorpayKeyId) {
+      toast.error("Missing Razorpay key id. Add REACT_APP_RAZORPAY_KEY_ID to your frontend env file.");
+      return;
+    }
+
+    if (!window.Razorpay) {
+      toast.error("Razorpay checkout script is not loaded.");
+      return;
+    }
+
+    setIsLaunchingPayment(true);
+
+    try {
+      const options = {
+        key: razorpayKeyId,
+        amount: Math.round(totalBill * 100),
+        currency: "INR",
+        name: "Mercato",
+        description: `Payment for ${cartDetails.length} item(s)`,
+        prefill: {
+          name: checkoutForm.customerName || session.name || "",
+          email: session.email || "",
+          contact: checkoutForm.phoneNumber || "",
+        },
+        theme: {
+          color: "#006653",
+        },
+        modal: {
+          ondismiss: () => setIsLaunchingPayment(false),
+        },
+        handler: async () => {
+          toast.success("Payment authorized. Placing your order...");
+          await placeOrderAfterPayment();
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.on("payment.failed", () => {
+        setIsLaunchingPayment(false);
+        toast.error("Payment failed or was cancelled.");
+      });
+      razorpay.open();
+    } catch (error) {
+      setIsLaunchingPayment(false);
+      toast.error(error.message || "Could not start Razorpay checkout.");
+    }
+  };
+
   if (placedOrder) {
     return (
       <main className="checkout-shell">
@@ -37,7 +105,13 @@ function CheckoutPage({
             </div>
             <div>
               <span>Estimated delivery</span>
-              <strong>{new Date(placedOrder.estimatedDeliveryDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</strong>
+              <strong>
+                {new Date(placedOrder.estimatedDeliveryDate).toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </strong>
               <p>{placedOrder.totalItems} items are now in processing.</p>
             </div>
           </div>
@@ -84,7 +158,7 @@ function CheckoutPage({
             </div>
           </div>
 
-          <form className="checkout-form" onSubmit={onPlaceOrder}>
+          <form className="checkout-form" onSubmit={openRazorpayCheckout}>
             <label>
               <span>Full name</span>
               <input name="customerName" onChange={onChange} required type="text" value={checkoutForm.customerName} />
@@ -129,7 +203,7 @@ function CheckoutPage({
               <span>Payment method</span>
               <select name="paymentMethod" onChange={onChange} value={checkoutForm.paymentMethod}>
                 <option value="COD">Cash on Delivery</option>
-                <option value="ONLINE">Online Payment</option>
+                <option value="ONLINE">Razorpay Online Payment</option>
               </select>
             </label>
 
@@ -138,13 +212,22 @@ function CheckoutPage({
               <strong>{estimatedArrivalLabel}</strong>
               <p>
                 {checkoutForm.paymentMethod === "ONLINE"
-                  ? "Online payments are marked paid instantly for this demo checkout."
+                  ? "Razorpay will open a secure payment modal before the order is submitted."
                   : "Cash on Delivery will be collected at the time of delivery."}
               </p>
             </div>
 
-            <button className="primary-button checkout-submit" disabled={isPlacingOrder || cartDetails.length === 0} type="submit">
-              {isPlacingOrder ? "Placing Order..." : "Place Order"}
+            <div className="rounded-[18px] border border-emerald-100 bg-emerald-50/70 p-4 text-sm text-[#006653]">
+              <strong className="block">Razorpay ready</strong>
+              <span>Use your test key in REACT_APP_RAZORPAY_KEY_ID and keep the secret on the server.</span>
+            </div>
+
+            <button
+              className="primary-button checkout-submit"
+              disabled={isPlacingOrder || isLaunchingPayment || cartDetails.length === 0}
+              type="submit"
+            >
+              {isPlacingOrder || isLaunchingPayment ? "Processing..." : "Place Order"}
             </button>
           </form>
         </article>

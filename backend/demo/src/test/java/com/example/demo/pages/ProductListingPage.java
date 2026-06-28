@@ -123,9 +123,26 @@ public class ProductListingPage extends BasePage {
             throw new IllegalArgumentException("Product index " + index + " not found.");
         }
         products.get(index).findElement(By.xpath(".//button[contains(@class, 'catalog-action')]")).click();
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@class='product-info-section']//h1")));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//main//h1")));
         pauseForDemo();
         return new ProductDetailPage(driver);
+    }
+
+    /**
+     * Click View Details for the product that matches the given name.
+     */
+    public ProductDetailPage clickViewDetailsForProduct(String productName) {
+        List<WebElement> products = getAllProductCards();
+        for (WebElement product : products) {
+            if (product.getText().contains(productName)) {
+                product.findElement(By.xpath(".//button[contains(@class, 'catalog-action')]")).click();
+                wait.until(ExpectedConditions.visibilityOfElementLocated(
+                        By.xpath("//h1[normalize-space()='" + productName + "']")));
+                pauseForDemo();
+                return new ProductDetailPage(driver);
+            }
+        }
+        throw new IllegalArgumentException("Product not found in catalog: " + productName);
     }
 
     /**

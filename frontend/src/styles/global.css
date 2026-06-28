@@ -11,8 +11,8 @@
   --ink: #172033;
   --muted: #61708a;
   --line: rgba(23, 32, 51, 0.08);
-  --primary: #1664d8;
-  --primary-deep: #0f4aa1;
+  --primary: #006653;
+  --primary-deep: #00493d;
   --accent: #ff7a00;
   --accent-soft: rgba(255, 122, 0, 0.12);
   --success-soft: rgba(16, 185, 129, 0.14);
@@ -35,7 +35,7 @@ body {
   font-family: "Trebuchet MS", "Gill Sans", sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(circle at top left, rgba(22, 100, 216, 0.14), transparent 24%),
+    radial-gradient(circle at top left, rgba(0, 102, 83, 0.14), transparent 24%),
     radial-gradient(circle at top right, rgba(255, 122, 0, 0.12), transparent 24%),
     linear-gradient(180deg, #f7fbff 0%, #f0f6ff 42%, #f8fafc 100%);
 }
@@ -79,7 +79,7 @@ img {
 }
 
 .section-kicker {
-  background: rgba(22, 100, 216, 0.1);
+  background: rgba(0, 102, 83, 0.1);
   color: var(--primary);
 }
 
@@ -113,15 +113,15 @@ img {
 }
 
 .primary-button {
-  background: linear-gradient(135deg, var(--primary), #3b82f6);
+  background: linear-gradient(135deg, var(--primary), #0fb28e);
   color: #f8fffe;
-  box-shadow: 0 14px 28px rgba(22, 100, 216, 0.22);
+  box-shadow: 0 14px 28px rgba(0, 102, 83, 0.22);
 }
 
 .ghost-button {
   background: rgba(255, 255, 255, 0.88);
   color: var(--primary-deep);
-  border: 1px solid rgba(22, 100, 216, 0.12);
+  border: 1px solid rgba(0, 102, 83, 0.12);
 }
 
 .primary-button:hover,

@@ -41,7 +41,7 @@ public abstract class BasePage {
      * Get input element by its label text
      */
     protected WebElement inputByLabel(String labelText) {
-        By locator = By.xpath("//label[.//span[normalize-space()='" + labelText + "']]//input");
+        By locator = By.xpath("//label[.//span[normalize-space()='" + labelText + "']]//*[self::input or self::textarea]");
         return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
 

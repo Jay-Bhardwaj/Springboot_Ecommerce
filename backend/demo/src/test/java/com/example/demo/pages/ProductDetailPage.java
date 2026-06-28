@@ -12,133 +12,142 @@ public class ProductDetailPage extends BasePage {
     }
 
     /**
-     * Get product name from detail page
+     * Get product name from detail page.
      */
     public String getProductName() {
-        return driver.findElement(By.xpath("//div[@class='product-info-section']//h1")).getText();
+        return wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//main//h1"))).getText();
     }
 
     /**
-     * Get product price from detail page
+     * Get product price from detail page.
      */
     public String getProductPrice() {
         return driver.findElement(By.xpath("//strong[contains(text(), 'Rs.')][1]")).getText();
     }
 
     /**
-     * Get product category from detail page
+     * Get product category from detail page.
      */
     public String getProductCategory() {
-        return driver.findElement(By.xpath("//span[@class='category-badge']")).getText();
+        return driver.findElement(By.xpath("//span[@class='catalog-category']")).getText();
     }
 
     /**
-     * Get product description from detail page
+     * Get product description from detail page.
      */
     public String getProductDescription() {
-        return driver.findElement(By.xpath("//div[@class='description-section']//p")).getText();
+        return driver.findElement(By.xpath("//main//p[normalize-space()][1]")).getText();
     }
 
     /**
-     * Get stock quantity from detail page
+     * Get stock quantity from detail page.
      */
     public String getStockQuantity() {
-        return driver.findElement(By.xpath("//span[contains(text(), 'units available')]")).getText();
+        return driver.findElement(By.xpath("//*[contains(normalize-space(),'units available')]")).getText();
     }
 
     /**
-     * Check if Add to Cart button is visible
+     * Check if Add to Cart button is visible.
      */
     public boolean isAddToCartButtonVisible() {
-        return !driver.findElements(By.xpath("//button[contains(@class, 'add-to-cart-btn')]")).isEmpty();
+        return !driver.findElements(By.xpath("//button[normalize-space()='Add to Cart']")).isEmpty();
     }
 
     /**
-     * Click Add to Cart button
+     * Click Add to Cart button.
      */
     public void clickAddToCart() {
-        WebElement addToCartButton = driver.findElement(By.xpath("//button[contains(@class, 'add-to-cart-btn')]"));
+        WebElement addToCartButton = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//button[normalize-space()='Add to Cart']")));
         addToCartButton.click();
         pauseForDemo();
     }
 
     /**
-     * Set quantity for product
+     * Set quantity for product.
      */
     public void setQuantity(int quantity) {
-        WebElement quantityInput = driver.findElement(By.xpath("//input[@class='qty-input']"));
+        WebElement quantityInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//main//input[@type='number']")));
         quantityInput.clear();
         quantityInput.sendKeys(String.valueOf(quantity));
         pauseForDemo();
     }
 
     /**
-     * Get current quantity value
+     * Get current quantity value.
      */
     public int getQuantity() {
-        WebElement quantityInput = driver.findElement(By.xpath("//input[@class='qty-input']"));
+        WebElement quantityInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//main//input[@type='number']")));
         String value = quantityInput.getAttribute("value");
         return Integer.parseInt(value);
     }
 
     /**
-     * Increment quantity button
+     * Increment quantity button.
      */
     public void incrementQuantity() {
-        WebElement incrementBtn = driver.findElement(By.xpath("//button[@class='qty-btn'][contains(text(), '+')]"));
+        WebElement incrementBtn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//main//button[normalize-space()='+']")));
         incrementBtn.click();
         pauseForDemo();
     }
 
     /**
-     * Decrement quantity button
+     * Decrement quantity button.
      */
     public void decrementQuantity() {
-        WebElement decrementBtn = driver.findElement(By.xpath("//button[@class='qty-btn'][contains(text(), '−')]"));
+        WebElement decrementBtn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//main//button[normalize-space()='-']")));
         decrementBtn.click();
         pauseForDemo();
     }
 
     /**
-     * Check if product is in stock
+     * Check if product is in stock.
      */
     public boolean isInStock() {
-        return !driver.findElements(By.xpath("//span[@class='badge in-stock']")).isEmpty();
+        return !driver.findElements(By.xpath("//*[contains(normalize-space(),'in stock') or contains(normalize-space(),'Ready to ship')]")).isEmpty();
     }
 
     /**
-     * Check if product is out of stock
+     * Check if product is out of stock.
      */
     public boolean isOutOfStock() {
-        return !driver.findElements(By.xpath("//span[@class='badge out-of-stock']")).isEmpty();
+        return !driver.findElements(By.xpath("//*[contains(normalize-space(),'Out of Stock') or contains(normalize-space(),'Currently unavailable')]")).isEmpty();
     }
 
     /**
-     * Go back to product listing
+     * Go back to product listing.
      */
     public ProductListingPage clickBackButton() {
-        WebElement backButton = driver.findElement(By.xpath("//button[contains(@class, 'back-button-detail')]"));
+        WebElement backButton = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//button[normalize-space()='Back to catalog']")));
         backButton.click();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//h3[normalize-space()='Recommended products']")));
         pauseForDemo();
         return new ProductListingPage(driver);
     }
 
     /**
-     * Get product rating
+     * Get product rating.
      */
     public String getRating() {
         return driver.findElement(By.xpath("//span[@class='rating-text']")).getText();
     }
 
     /**
-     * Check if product has reviews
+     * Check if product has reviews.
      */
     public boolean hasReviews() {
         return !driver.findElements(By.xpath("//div[@class='review-card']")).isEmpty();
     }
 
     /**
-     * Get number of reviews
+     * Get number of reviews.
      */
     public int getReviewsCount() {
         java.util.List<org.openqa.selenium.WebElement> reviews = driver.findElements(By.xpath("//div[@class='review-card']"));
