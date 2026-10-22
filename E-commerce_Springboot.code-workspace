@@ -1,0 +1,11 @@
+{
+  "folders": [
+    {
+      "name": "E-commerce Full Stack",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "java.import.maven.enabled": true
+  }
+}

@@ -1,25 +1,17 @@
-# Node (React)
-node_modules/
-build/
-.env
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
 
 # Spring Boot
-target/
+backend/target/
 *.log
 *.class
-
-# Scripts folder
+backend/application-local.properties
+backend/uploads/
 .tmp/
-.agents/
-scripts/
-# OS
+
+# IDE and OS
+.idea/
+.metadata/
 .DS_Store
 Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-/.metadata/
-
-# Excel
-

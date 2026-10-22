@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Debug Spring Boot backend",
+      "request": "launch",
+      "mainClass": "com.ecommerce.EcommerceProjApplication",
+      "projectName": "ecommerceProj",
+      "cwd": "${workspaceFolder}\\backend"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug backend + start frontend",
+      "configurations": ["Debug Spring Boot backend"],
+      "preLaunchTask": "Frontend: run Vite"
+    }
+  ]
+}

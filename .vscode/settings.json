@@ -1,0 +1,13 @@
+{
+  "java.import.maven.enabled": true,
+  "java.configuration.updateBuildConfiguration": "interactive",
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
+  "files.exclude": {
+    "**/target": true,
+    "**/node_modules": true
+  }
+}

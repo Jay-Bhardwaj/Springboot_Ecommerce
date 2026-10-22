@@ -1,0 +1,76 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Backend: run Spring Boot",
+      "type": "shell",
+      "command": ".\\mvnw.cmd spring-boot:run",
+      "options": {
+        "cwd": "${workspaceFolder}\\backend\\demo"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "spring-boot",
+        "pattern": [
+          {
+            "regexp": "^(.*)$",
+            "message": 1
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Starting DemoApplication",
+          "endsPattern": "Started DemoApplication"
+        }
+      }
+    },
+    {
+      "label": "Backend: test",
+      "type": "shell",
+      "command": ".\\mvnw.cmd test",
+      "options": {
+        "cwd": "${workspaceFolder}\\backend\\demo"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Frontend: install dependencies",
+      "type": "shell",
+      "command": "npm install",
+      "options": {
+        "cwd": "${workspaceFolder}\\frontend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Frontend: run React",
+      "type": "shell",
+      "command": "npm start",
+      "options": {
+        "cwd": "${workspaceFolder}\\frontend"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "react",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Starting the development server",
+          "endsPattern": "Compiled successfully"
+        }
+      }
+    },
+    {
+      "label": "Start full stack",
+      "dependsOn": [
+        "Backend: run Spring Boot",
+        "Frontend: run React"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}
