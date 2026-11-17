@@ -6,7 +6,7 @@ export default function Footer() {
       <div className={styles.inner}>
         <div className={styles.left}>
           <span className={styles.logo}>ShopApp</span>
-          <span className={styles.copy}>© 2024 All rights reserved</span>
+          <span className={styles.copy}>© 2026 All rights reserved</span>
         </div>
         <div className={styles.links}>
           <span>Full Stack POC — Spring Boot + React + MySQL</span>

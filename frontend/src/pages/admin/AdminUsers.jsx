@@ -35,7 +35,7 @@ export default function AdminUsers() {
       </div>
 
       {loading ? <p className={styles.loadMsg}>Loading...</p> : (
-        <div className={styles.table}>
+        <div className={`${styles.table} ${styles.userTable}`}>
           <div className={styles.tableHead}>
             <span>Name</span>
             <span>Email</span>

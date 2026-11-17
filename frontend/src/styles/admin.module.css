@@ -182,9 +182,25 @@
   border-radius: 20px; font-size: 12px; font-weight: 500;
 }
 
-/* Users table — different column layout */
-.tableHead:has(+ .tableRow .userCell) {
-  grid-template-columns: 2fr 2fr 0.8fr 1fr 1fr;
+/* Users table — the header and every row must use the same five columns. */
+.userTable {
+  overflow-x: auto;
+}
+
+.userTable .tableHead,
+.userTable .tableRow {
+  grid-template-columns: minmax(175px, 1.2fr) minmax(210px, 1.55fr) minmax(90px, 0.7fr) minmax(110px, 0.8fr) minmax(92px, 0.7fr);
+}
+
+.userTable .cell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userTable .actions {
+  justify-content: flex-start;
 }
 
 /* Modal */

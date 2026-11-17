@@ -80,6 +80,7 @@ export default function LoginPage() {
         <p className={styles.switchLink}>
           New here? <Link to="/register">Create an account</Link>
         </p>
+        <Link to="/admin/login" className={styles.adminLoginLink}>Administrator login</Link>
       </section>
     </div>
   );

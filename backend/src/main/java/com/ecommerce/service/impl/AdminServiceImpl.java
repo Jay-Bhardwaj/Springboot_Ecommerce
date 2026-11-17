@@ -6,6 +6,7 @@ import com.ecommerce.repository.*;
 import com.ecommerce.service.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -22,6 +23,10 @@ public class AdminServiceImpl implements AdminService {
 	private CartRepository cartRepository;
 	@Autowired
 	private ReviewRepository reviewRepository;
+	@Autowired
+	private WishlistItemRepository wishlistItemRepository;
+	@Autowired
+	private OrderRepository orderRepository;
 
 	// ── Mappers ──────────────────────────────────────────
 
@@ -115,10 +120,18 @@ public class AdminServiceImpl implements AdminService {
 	}
 
 	@Override
+	@Transactional
 	public void deleteUser(Long id) {
 		User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
 		if ("ADMIN".equals(user.getRole()))
 			throw new RuntimeException("Cannot delete admin user");
+
+		// Remove all records that reference this account before deleting the account itself.
+		// Cart and order item rows are removed by their entity cascade settings.
+		wishlistItemRepository.deleteByUser(user);
+		reviewRepository.deleteByUser(user);
+		cartRepository.findByUser(user).ifPresent(cartRepository::delete);
+		orderRepository.deleteAll(orderRepository.findByUserOrderByCreatedAtDesc(user));
 		userRepository.delete(user);
 	}
 

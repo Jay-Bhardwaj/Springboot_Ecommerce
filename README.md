@@ -31,6 +31,20 @@ This workspace contains the migrated e-commerce application and is designed to b
 
 The backend runs on `http://localhost:8081` and the frontend runs on `http://localhost:5173`.
 
+## Razorpay Test Mode
+
+Online checkout is integrated with Razorpay Test Mode. Add your credentials only to
+`backend/application-local.properties` (never to the frontend):
+
+```properties
+razorpay.key.id=rzp_test_your_key_id
+razorpay.key.secret=your_test_key_secret
+```
+
+Restart the backend after saving. Sign in, add an item to the cart, choose **Online
+Payment** at checkout, and complete the test payment in the Razorpay Checkout window.
+The backend verifies the Razorpay signature before marking the order as paid.
+
 ## VS Code commands
 
 - **Backend: run Spring Boot** — start only the API
